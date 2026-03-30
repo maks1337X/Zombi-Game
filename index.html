@@ -14,8 +14,8 @@ canvas{display:block;position:absolute;top:0;left:0;}
 #ui-menu{background:radial-gradient(ellipse at 50% 30%,rgba(10,28,5,0.98) 0%,rgba(2,6,1,1) 100%);}
 .menu-title{font-size:clamp(2rem,5vw,4rem);font-weight:900;letter-spacing:0.06em;color:#ff4444;text-shadow:0 0 30px rgba(255,60,60,0.7),0 4px 12px rgba(0,0,0,0.9);margin-bottom:2px;text-align:center;}
 .menu-sub{font-size:0.88rem;color:#88bb66;letter-spacing:0.18em;text-transform:uppercase;margin-bottom:12px;text-shadow:0 0 10px rgba(100,200,60,0.4);}
-.menu-card{background:rgba(6,18,3,0.92);border:1.5px solid rgba(70,140,35,0.4);border-radius:18px;padding:16px 20px;margin-bottom:10px;width:min(860px,calc(100vw - 12px));box-shadow:0 8px 32px rgba(0,0,0,0.7);}
-.menu-tabs{display:flex;gap:6px;margin-bottom:12px;border-bottom:1px solid rgba(70,140,35,0.22);padding-bottom:8px;}
+.menu-card{background:rgba(6,18,3,0.92);border:1.5px solid rgba(70,140,35,0.4);border-radius:18px;padding:16px 20px;margin-bottom:10px;width:min(880px,calc(100vw - 12px));box-shadow:0 8px 32px rgba(0,0,0,0.7);}
+.menu-tabs{display:flex;gap:6px;margin-bottom:12px;border-bottom:1px solid rgba(70,140,35,0.22);padding-bottom:8px;flex-wrap:wrap;}
 .menu-tab{padding:7px 13px;border-radius:7px;border:1.5px solid rgba(70,140,35,0.3);background:rgba(0,0,0,0.3);color:#88bb66;font-size:0.78rem;font-weight:700;cursor:pointer;transition:all 0.15s;}
 .menu-tab.active{background:rgba(70,140,35,0.2);border-color:#88bb66;color:#ccff88;}
 .tab-panel{display:none;}.tab-panel.active{display:block;}
@@ -24,19 +24,26 @@ canvas{display:block;position:absolute;top:0;left:0;}
 .ctrl-title{font-size:0.84rem;font-weight:800;margin-bottom:7px;}
 .ctrl-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;font-size:0.74rem;}
 .ctrl-lbl{color:#aaa;}
-.key-btn{min-width:74px;padding:4px 7px;background:rgba(14,14,14,0.92);border:1.5px solid #555;border-radius:6px;color:#fff;font-size:0.7rem;font-weight:700;cursor:pointer;text-align:center;transition:border-color 0.15s;}
+.key-btn{min-width:80px;padding:4px 7px;background:rgba(14,14,14,0.92);border:1.5px solid #555;border-radius:6px;color:#fff;font-size:0.7rem;font-weight:700;cursor:pointer;text-align:center;transition:border-color 0.15s;}
 .key-btn:hover{border-color:#88bb66;}
 .key-btn.listening{border-color:#ffcc00;background:rgba(45,36,0,0.85);color:#ffcc00;animation:blink 0.5s infinite;}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:0.45}}
-.cost-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-.cost-box{background:rgba(0,0,0,0.32);border-radius:10px;padding:10px 12px;border:1px solid rgba(70,140,35,0.22);text-align:center;}
-.cost-opts{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:7px;}
-.cost-opt{width:32px;height:32px;border-radius:7px;border:2px solid #444;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1rem;transition:border-color 0.12s,transform 0.12s;}
+.cost-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.cost-box{background:rgba(0,0,0,0.32);border-radius:12px;padding:12px 14px;border:1px solid rgba(70,140,35,0.22);text-align:center;}
+.cost-opts{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;margin-top:8px;}
+.cost-opt{width:36px;height:36px;border-radius:8px;border:2px solid #444;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.05rem;transition:border-color 0.12s,transform 0.12s;}
 .cost-opt:hover,.cost-opt.sel{border-color:#ffcc00;transform:scale(1.18);}
+.name-inp{background:rgba(0,0,0,0.5);border:1.5px solid rgba(70,140,35,0.4);border-radius:7px;color:#fff;font-size:0.9rem;padding:5px 9px;width:100%;margin-top:7px;outline:none;}
+.name-inp:focus{border-color:#88bb66;}
 .main-btn{padding:13px 40px;font-size:1.2rem;background:linear-gradient(180deg,#ff5555,#bb0000);color:#fff;border:none;border-radius:12px;cursor:pointer;transition:transform 0.15s,box-shadow 0.15s;box-shadow:0 6px 20px rgba(255,0,0,0.32);font-weight:900;letter-spacing:0.04em;}
 .main-btn:hover{transform:scale(1.05);box-shadow:0 10px 28px rgba(255,0,0,0.55);}
 .main-btn-g{background:linear-gradient(180deg,#55cc44,#1a6608);box-shadow:0 6px 20px rgba(60,200,40,0.28);}
 .main-btn-gray{background:linear-gradient(180deg,#555,#333);box-shadow:none;}
+.mode-btns{display:flex;gap:14px;margin-top:10px;justify-content:center;flex-wrap:wrap;}
+.mode-card{background:rgba(6,22,3,0.92);border:2px solid rgba(70,140,35,0.45);border-radius:16px;padding:22px 28px;text-align:center;cursor:pointer;transition:border-color 0.18s,box-shadow 0.18s;min-width:200px;max-width:280px;}
+.mode-card:hover{border-color:#88cc55;box-shadow:0 0 24px rgba(100,200,60,0.25);}
+.mode-card h3{color:#ccff88;margin:6px 0 4px;font-size:1.1rem;}
+.mode-card p{color:#88aa66;font-size:0.78rem;margin:0;}
 
 .hud{position:absolute;top:14px;z-index:100;background:rgba(4,14,2,0.94);padding:9px 13px;border-radius:12px;border:1.5px solid rgba(70,140,35,0.48);min-width:210px;box-shadow:0 4px 16px rgba(0,0,0,0.55);}
 .hud-left{left:14px;}.hud-right{right:14px;}
@@ -64,12 +71,9 @@ canvas{display:block;position:absolute;top:0;left:0;}
 .base-sf.empty{width:0%;background:transparent;}
 .base-lbl{margin-top:2px;text-align:center;color:#dbe5d2;font-size:0.5rem;}
 
-/* Склад на базе */
 .depot-ui{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);z-index:120;background:rgba(4,14,2,0.94);padding:7px 14px;border-radius:10px;border:1.5px solid rgba(70,140,35,0.5);display:flex;gap:16px;align-items:center;}
 .depot-block{text-align:center;font-size:0.7rem;}
 .depot-val{font-size:1rem;font-weight:bold;color:#ffd700;}
-.depot-btn{font-size:0.62rem;padding:2px 7px;border-radius:5px;border:1px solid #555;background:rgba(0,0,0,0.5);color:#aaa;cursor:pointer;margin-top:2px;}
-.depot-btn:hover{border-color:#88bb66;color:#cfc;}
 
 .shop-panel{background:linear-gradient(135deg,#060f04,#101a08);padding:20px;border:2px solid rgba(70,140,35,0.55);border-radius:18px;width:min(640px,calc(100vw - 12px));text-align:center;max-height:90vh;overflow-y:auto;box-shadow:0 10px 40px rgba(0,0,0,0.85);}
 .shop-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0;}
@@ -81,19 +85,19 @@ canvas{display:block;position:absolute;top:0;left:0;}
 .eb{display:flex;gap:4px;}.eb button{flex:1;font-size:0.68rem;padding:5px;color:#fff;text-shadow:1px 1px 2px rgba(0,0,0,0.8);}
 
 #ui-death{background:radial-gradient(ellipse at 50% 40%,rgba(36,4,4,0.97) 0%,rgba(3,3,3,0.99) 100%);}
-.death-card{background:rgba(20,4,4,0.88);border:2px solid rgba(200,30,30,0.45);border-radius:20px;padding:30px 42px;text-align:center;max-width:520px;box-shadow:0 0 60px rgba(180,0,0,0.3);}
+.death-card{background:rgba(20,4,4,0.88);border:2px solid rgba(200,30,30,0.45);border-radius:20px;padding:30px 42px;text-align:center;max-width:540px;box-shadow:0 0 60px rgba(180,0,0,0.3);}
 .death-btns{display:flex;gap:12px;margin-top:22px;justify-content:center;flex-wrap:wrap;}
 
-#ui-pause{background:rgba(0,0,0,0.8);}
-.pause-card{background:rgba(6,16,4,0.96);border:2px solid rgba(70,140,35,0.55);border-radius:20px;padding:32px 48px;text-align:center;min-width:300px;box-shadow:0 0 50px rgba(40,100,10,0.25);}
-.pause-btn{display:block;width:100%;padding:12px;margin-bottom:9px;border:none;border-radius:10px;font-size:0.95rem;font-weight:800;cursor:pointer;transition:transform 0.12s;}
+#ui-pause{background:rgba(0,0,0,0.82);}
+.pause-card{background:rgba(6,16,4,0.97);border:2px solid rgba(70,140,35,0.55);border-radius:20px;padding:32px 48px;text-align:center;min-width:300px;box-shadow:0 0 50px rgba(40,100,10,0.25);}
+.pause-btn{display:block;width:100%;padding:13px;margin-bottom:10px;border:none;border-radius:10px;font-size:1rem;font-weight:800;cursor:pointer;transition:transform 0.12s;}
 .pause-btn:hover{transform:scale(1.03);}
 .pause-btn-green{background:linear-gradient(180deg,#55cc44,#1a6608);color:#fff;}
 .pause-btn-blue{background:linear-gradient(180deg,#4488ff,#1133bb);color:#fff;}
 .pause-btn-red{background:linear-gradient(180deg,#ff5555,#bb0000);color:#fff;}
 .pause-btn-gray{background:linear-gradient(180deg,#555,#2a2a2a);color:#ccc;}
 
-.wave-ann{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(1.1);font-size:clamp(1.8rem,4vw,2.8rem);font-weight:900;color:#ff4444;text-shadow:0 0 30px rgba(255,40,40,0.9);pointer-events:none;z-index:300;opacity:0;transition:opacity 0.3s,transform 0.3s;letter-spacing:0.06em;text-align:center;}
+.wave-ann{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(1.1);font-size:clamp(1.8rem,4vw,2.8rem);font-weight:900;color:#ff4444;text-shadow:0 0 30px rgba(255,40,40,0.9);pointer-events:none;z-index:300;opacity:0;transition:opacity 0.3s,transform 0.3s;letter-spacing:0.06em;text-align:center;white-space:nowrap;}
 .wave-ann.show{opacity:1;transform:translate(-50%,-50%) scale(1);}
 #fps-c{position:absolute;bottom:7px;right:9px;z-index:200;font-size:0.6rem;color:rgba(130,255,80,0.65);background:rgba(0,0,0,0.52);padding:2px 6px;border-radius:5px;font-family:monospace;pointer-events:none;}
 </style>
@@ -102,50 +106,77 @@ canvas{display:block;position:absolute;top:0;left:0;}
 
 <!-- MENU -->
 <div id="ui-menu" class="overlay">
-  <div style="text-align:center;width:min(860px,calc(100vw - 12px));">
+  <div style="text-align:center;width:min(880px,calc(100vw - 12px));">
     <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:2px;">
       <span style="font-size:1.8rem;">🌲</span>
       <div class="menu-title">ЗОМБИ КООПЕРАТИВ</div>
       <span style="font-size:1.8rem;">🌲</span>
     </div>
     <div class="menu-sub">☠ Лесной кошмар — КООП ☠</div>
-    <div class="menu-card">
-      <div class="menu-tabs" id="menu-tabs">
-        <div class="menu-tab active" data-tab="howto">📖 КАК ИГРАТЬ</div>
-        <div class="menu-tab" data-tab="controls">🎮 УПРАВЛЕНИЕ</div>
-        <div class="menu-tab" data-tab="costumes">👕 КОСТЮМЫ</div>
-      </div>
-      <div class="tab-panel active" id="tab-howto">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;text-align:left;">
-          <div style="background:rgba(0,180,255,0.06);border:1px solid rgba(0,180,255,0.2);border-radius:8px;padding:9px;">
-            <div class="p1-c" style="margin-bottom:5px;">⚡ ИГРОК 1 (по умолчанию)</div>
-            <div style="font-size:0.74rem;color:#ccc;line-height:1.75;">WASD — передвижение<br>ПРОБЕЛ — стрельба<br>ЛЕВЫЙ SHIFT — мина<br>E — бочка<br>F — взаимодействие со складом<br>R — перезарядка</div>
+
+    <div id="menu-main">
+      <div class="menu-card">
+        <div class="menu-tabs" id="menu-tabs">
+          <div class="menu-tab active" data-tab="howto">📖 КАК ИГРАТЬ</div>
+          <div class="menu-tab" data-tab="controls">🎮 УПРАВЛЕНИЕ</div>
+          <div class="menu-tab" data-tab="costumes">👕 КОСТЮМЫ</div>
+        </div>
+        <div class="tab-panel active" id="tab-howto">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;text-align:left;">
+            <div style="background:rgba(0,180,255,0.06);border:1px solid rgba(0,180,255,0.2);border-radius:8px;padding:9px;">
+              <div class="p1-c" style="margin-bottom:5px;">⚡ ИГРОК 1 (по умолчанию)</div>
+              <div style="font-size:0.74rem;color:#ccc;line-height:1.75;">WASD — передвижение<br>ПРОБЕЛ — стрельба<br>ЛЕВЫЙ SHIFT — мина<br>E — поставить бочку<br>F — взаимодействие со складом<br>R — перезарядка</div>
+            </div>
+            <div style="background:rgba(255,0,255,0.06);border:1px solid rgba(255,0,255,0.2);border-radius:8px;padding:9px;">
+              <div class="p2-c" style="margin-bottom:5px;">⚡ ИГРОК 2 (по умолчанию)</div>
+              <div style="font-size:0.74rem;color:#ccc;line-height:1.75;">СТРЕЛКИ — передвижение<br>ПРАВЫЙ CTRL — стрельба<br>ПРАВЫЙ SHIFT — мина<br>Num0 — поставить бочку<br>Num+ — взаимодействие со складом<br>Num- — перезарядка</div>
+            </div>
           </div>
-          <div style="background:rgba(255,0,255,0.06);border:1px solid rgba(255,0,255,0.2);border-radius:8px;padding:9px;">
-            <div class="p2-c" style="margin-bottom:5px;">⚡ ИГРОК 2 (по умолчанию)</div>
-            <div style="font-size:0.74rem;color:#ccc;line-height:1.75;">СТРЕЛКИ — передвижение<br>ПРАВЫЙ CTRL — стрельба<br>ПРАВЫЙ SHIFT — мина<br>Num0 — бочка<br>Num- — перезарядка<br>Num+ — взаимодействие со складом</div>
+          <div style="margin-top:8px;padding:8px 10px;background:rgba(255,215,0,0.06);border:1px dashed rgba(255,215,0,0.22);border-radius:8px;font-size:0.73rem;color:#e0d0a0;line-height:1.7;text-align:left;">
+            🏠 Защищайте домик с раненым в центре карты!<br>
+            🔫 Ящик с патронами → ПОЛНЫЙ резерв (5/5) + полная обойма тому, кто подобрал<br>
+            💊 Аптечки на карте. Если здоров — подбери и неси к складу базы (кнопка взаим.)<br>
+            🛢️ Бочки — блокируют зомби, 100 ударов. Игроки проходят насквозь!<br>
+            💣 Мина — убивает до 3 зомби в зоне взрыва мгновенно<br>
+            📦 На базе два склада: синий (патроны) и красный (аптечки)<br>
+            ESC — пауза | B — магазин
           </div>
         </div>
-        <div style="margin-top:8px;padding:8px 10px;background:rgba(255,215,0,0.06);border:1px dashed rgba(255,215,0,0.22);border-radius:8px;font-size:0.73rem;color:#e0d0a0;line-height:1.7;text-align:left;">
-          🏠 Защищайте домик с раненым! Зомби идут к базе.<br>
-          🔫 Ящик с патронами → ПОЛНЫЙ резерв (5/5) + полная обойма только тому, кто подобрал<br>
-          💊 Аптечки на карте. Если здоров — подбери и неси на базу (кнопка взаимодействия у склада)<br>
-          🛢️ Бочки — блокируют зомби, имеют 100 ударов, игроки проходят насквозь<br>
-          💣 Мина — взрывает 2–3 зомби в радиусе мгновенно<br>
-          📦 На базе стоят ящики-склад: подноси предметы и клади кнопкой взаимодействия<br>
-          ESC — пауза | B — магазин
+        <div class="tab-panel" id="tab-controls">
+          <div class="ctrl-grid" id="ctrl-ui"></div>
+          <div style="margin-top:7px;font-size:0.69rem;color:#666;text-align:center;">Нажмите кнопку → затем нажмите нужную клавишу</div>
+        </div>
+        <div class="tab-panel" id="tab-costumes">
+          <div class="cost-grid" id="cost-ui"></div>
         </div>
       </div>
-      <div class="tab-panel" id="tab-controls">
-        <div class="ctrl-grid" id="ctrl-ui"></div>
-        <div style="margin-top:7px;font-size:0.69rem;color:#666;text-align:center;">Нажмите кнопку → затем нажмите нужную клавишу</div>
-      </div>
-      <div class="tab-panel" id="tab-costumes">
-        <div class="cost-grid" id="cost-ui"></div>
+      <div class="mode-btns">
+        <div class="mode-card" onclick="initGame()">
+          <div style="font-size:2.2rem;">🖥️</div>
+          <h3>ОДИН КОМПЬЮТЕР</h3>
+          <p>Локальный кооп за одним компьютером. Два игрока на одной клавиатуре.</p>
+        </div>
+        <div class="mode-card" onclick="showOnlineInfo()">
+          <div style="font-size:2.2rem;">🌐</div>
+          <h3>ОНЛАЙН (в разработке)</h3>
+          <p>Игра по сети с другом. Скоро будет доступно!</p>
+        </div>
       </div>
     </div>
-    <button class="main-btn main-btn-g" onclick="initGame()" style="font-size:1.2rem;padding:14px 52px;">⚔️ НАЧАТЬ БОЙ</button>
-    <div style="margin-top:6px;font-size:0.66rem;color:#3a6a28;letter-spacing:0.1em;">ВЕРСИЯ 6.0</div>
+
+    <div id="online-info" class="hidden" style="margin-top:8px;">
+      <div style="background:rgba(6,18,3,0.92);border:1.5px solid rgba(70,140,35,0.4);border-radius:14px;padding:18px 22px;text-align:left;font-size:0.82rem;line-height:1.7;color:#aaccaa;">
+        <div style="color:#ccff88;font-weight:800;font-size:1rem;margin-bottom:8px;">🌐 Об онлайн-режиме</div>
+        Для полноценного онлайна нужен WebSocket-сервер. Рекомендуем бесплатные варианты:<br>
+        <b style="color:#ffd700;">• Partykit.io</b> — бесплатный multiplayer-хостинг для игр<br>
+        <b style="color:#ffd700;">• Colyseus</b> — open-source сервер для игр, есть бесплатный tier<br>
+        <b style="color:#ffd700;">• Ably / Pusher</b> — realtime-каналы, бесплатно до 200 соединений<br><br>
+        Схема работы: каждый игрок заходит по коду комнаты (как в Among Us), сервер синхронизирует позиции, выстрелы и состояние игры. Это доработка следующей версии!
+      </div>
+      <button class="main-btn main-btn-gray" style="margin-top:10px;" onclick="document.getElementById('online-info').classList.add('hidden')">← НАЗАД</button>
+    </div>
+
+    <div style="margin-top:6px;font-size:0.66rem;color:#3a6a28;letter-spacing:0.1em;">ВЕРСИЯ 7.0</div>
   </div>
 </div>
 
@@ -176,7 +207,7 @@ canvas{display:block;position:absolute;top:0;left:0;}
 </div>
 
 <div id="ui-pause-ctrl" class="overlay hidden">
-  <div class="pause-card" style="min-width:500px;max-width:calc(100vw - 16px);">
+  <div class="pause-card" style="min-width:520px;max-width:calc(100vw - 16px);">
     <h3 style="color:#ccff88;margin:0 0 12px;font-size:1.2rem;">🎮 УПРАВЛЕНИЕ</h3>
     <div class="ctrl-grid" id="pause-ctrl-ui"></div>
     <div style="margin-top:8px;font-size:0.68rem;color:#666;text-align:center;margin-bottom:10px;">Нажмите кнопку → затем нажмите нужную клавишу</div>
@@ -193,7 +224,7 @@ canvas{display:block;position:absolute;top:0;left:0;}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:9px;">
       <div class="shop-item" style="background:rgba(36,16,0,0.52);border-color:#f80;">
         <span style="font-weight:bold;color:#ffbf66;font-size:0.83rem;">💣 Мины (×3)</span>
-        <div style="font-size:0.7rem;color:#ddd;text-align:left;">Взрывают 2–3 зомби мгновенно в радиусе!</div>
+        <div style="font-size:0.7rem;color:#ddd;text-align:left;">Убивают до 3 зомби мгновенно в радиусе!</div>
         <div class="eb">
           <button style="background:linear-gradient(180deg,#ffa500,#cc7700);color:#fff;" onclick="buyMines(12,1)">И1 — 12💰</button>
           <button style="background:linear-gradient(180deg,#ffa500,#cc7700);color:#fff;" onclick="buyMines(12,2)">И2 — 12💰</button>
@@ -249,23 +280,20 @@ canvas{display:block;position:absolute;top:0;left:0;}
   <div id="base-lbl" class="base-lbl">360 / 360</div>
 </div>
 
-<!-- Склад на базе -->
 <div class="depot-ui" id="depot-ui">
+  <div class="depot-block"><div>📦 СКЛАД БАЗЫ</div></div>
   <div class="depot-block">
-    <div>📦 СКЛАД БАЗЫ</div>
-  </div>
-  <div class="depot-block">
-    <div>🔫 Патроны</div>
+    <div style="color:#88aaff;">🔫 Патроны</div>
     <div class="depot-val" id="depot-ammo">0</div>
   </div>
   <div class="depot-block">
-    <div>💊 Аптечки</div>
+    <div style="color:#ff8888;">💊 Аптечки</div>
     <div class="depot-val" id="depot-med">0</div>
   </div>
-  <div style="font-size:0.64rem;color:#88bb66;">Подойди к базе<br>и нажми <b>F</b> / <b>Num+</b></div>
+  <div style="font-size:0.64rem;color:#88bb66;">Подойди к базе<br>нажми <b>F</b> / <b>Num+</b></div>
 </div>
 
-<div id="fps-c">FPS: -- | PING: --ms</div>
+<div id="fps-c">FPS: -- | PING: --мс</div>
 
 <canvas id="gc"></canvas>
 
@@ -277,12 +305,13 @@ const ctx = canvas.getContext('2d');
 const TILE = 64;
 const MAPSZ = 41;
 const AMMO_MAX = 5;
-const MINE_RADIUS = 90;
+const MINE_RADIUS = 88;
 const BARREL_HP = 100;
-const BARREL_R = 18;
+const BARREL_R = 20;
 const MAX_AMMO_P = 6;
 const MAX_MED_P = 4;
-const BASE_DEPOT_RADIUS = 160; // радиус взаимодействия со складом
+const BASE_DEPOT_R = 170;
+const BOSS_SIZE = 36; // уменьшен с 48 до 36 чтобы не застревал
 
 // ===== STATE =====
 let gState = 'MENU';
@@ -298,12 +327,12 @@ let ammoPickups = [];
 let medPickups = [];
 let dmgNums = [];
 let wave = 0;
-let waveSpawning = false; // флаг: зомби волны ещё спавнятся
-let waveTotal = 0;        // сколько зомби запланировано в волне
-let waveSpawned = 0;      // сколько уже заспавнилось
+let waveSpawning = false;
+let waveTotal = 0;
+let waveSpawned = 0;
 let gCoins = 0;
-let depotAmmo = 0;   // склад на базе: запасы патронов
-let depotMed = 0;    // склад на базе: запасы аптечек
+let depotAmmo = 0;
+let depotMed = 0;
 let cam = { x: 0, y: 0 };
 let audioCtx = null;
 let flowP = [], flowB = [];
@@ -316,7 +345,7 @@ let fpsCnt = 0, fpsVal = 0, fpsLast = performance.now();
 let pingVal = Math.floor(Math.random()*14+4);
 let pingTmr = 0;
 let listeningFor = null;
-let listeningContext = 'menu';
+let listeningCtx = 'menu';
 const maze = [];
 const tileRnd = [];
 const keys = {};
@@ -335,6 +364,7 @@ const COSTUMES = [
   { id:'ranger',  name:'Рейнджер',  body:'#2d5a27', head:'#d2a679', helm:'#1a3a15', det:'#88cc55', icon:'🌲' },
 ];
 let pCostumes = [COSTUMES[0], COSTUMES[3]];
+let pNames = ['ИГРОК 1', 'ИГРОК 2'];
 
 // ===== CONTROLS =====
 const DEF_CTRL = [
@@ -346,87 +376,100 @@ let pCtrl = [ {...DEF_CTRL[0]}, {...DEF_CTRL[1]} ];
 
 function keyName(code) {
   const m = { Space:'Пробел',ShiftLeft:'L.Shift',ShiftRight:'R.Shift',ControlLeft:'L.Ctrl',ControlRight:'R.Ctrl',AltLeft:'L.Alt',AltRight:'R.Alt',ArrowUp:'↑',ArrowDown:'↓',ArrowLeft:'←',ArrowRight:'→',NumpadSubtract:'Num-',NumpadAdd:'Num+',Numpad0:'Num0',Enter:'Enter' };
-  if (m[code]) return m[code];
-  if (code.startsWith('Key')) return code.slice(3);
-  if (code.startsWith('Digit')) return code.slice(5);
-  if (code.startsWith('Numpad')) return 'Num'+code.slice(6);
+  if(m[code]) return m[code];
+  if(code.startsWith('Key')) return code.slice(3);
+  if(code.startsWith('Digit')) return code.slice(5);
+  if(code.startsWith('Numpad')) return 'Num'+code.slice(6);
   return code;
 }
 
-function buildCtrlUI(containerId, context) {
-  containerId = containerId || 'ctrl-ui';
-  context = context || 'menu';
-  const c = document.getElementById(containerId);
-  if (!c) return;
+function buildCtrlUI(cid, ctx2) {
+  cid = cid||'ctrl-ui'; ctx2 = ctx2||'menu';
+  const c = document.getElementById(cid);
+  if(!c) return;
   c.innerHTML = '';
-  for (let pi = 0; pi < 2; pi++) {
-    const box = document.createElement('div');
-    box.className = 'ctrl-box';
-    const ttl = document.createElement('div');
-    ttl.className = 'ctrl-title ' + (pi===0?'p1-c':'p2-c');
-    ttl.textContent = pi===0 ? '⚡ ИГРОК 1' : '⚡ ИГРОК 2';
+  for(let pi=0;pi<2;pi++){
+    const box=document.createElement('div');
+    box.className='ctrl-box';
+    const ttl=document.createElement('div');
+    ttl.className='ctrl-title '+(pi===0?'p1-c':'p2-c');
+    ttl.textContent=pi===0?'⚡ ИГРОК 1':'⚡ ИГРОК 2';
     box.appendChild(ttl);
-    for (const a in CTRL_LBL) {
-      const row = document.createElement('div');
-      row.className = 'ctrl-row';
-      const lbl = document.createElement('span');
-      lbl.className = 'ctrl-lbl';
-      lbl.textContent = CTRL_LBL[a];
-      const btn = document.createElement('button');
-      btn.className = 'key-btn';
-      btn.id = 'kb-'+context+'-'+pi+'-'+a;
-      btn.textContent = keyName(pCtrl[pi][a]);
-      btn.onclick = () => startListen(pi, a, context);
-      row.appendChild(lbl); row.appendChild(btn);
-      box.appendChild(row);
+    for(const a in CTRL_LBL){
+      const row=document.createElement('div');row.className='ctrl-row';
+      const lbl=document.createElement('span');lbl.className='ctrl-lbl';lbl.textContent=CTRL_LBL[a];
+      const btn=document.createElement('button');btn.className='key-btn';
+      btn.id='kb-'+ctx2+'-'+pi+'-'+a;
+      btn.textContent=keyName(pCtrl[pi][a]);
+      btn.onclick=()=>startListen(pi,a,ctx2);
+      row.appendChild(lbl);row.appendChild(btn);box.appendChild(row);
     }
-    const rb = document.createElement('button');
-    rb.style.cssText = 'margin-top:5px;width:100%;padding:3px;background:rgba(60,0,0,0.42);border:1px solid #844;border-radius:5px;color:#faa;font-size:0.68rem;cursor:pointer;';
-    rb.textContent = '↺ Сброс';
-    rb.onclick = () => { pCtrl[pi]={...DEF_CTRL[pi]}; buildCtrlUI(containerId, context); };
+    const rb=document.createElement('button');
+    rb.style.cssText='margin-top:5px;width:100%;padding:3px;background:rgba(60,0,0,0.42);border:1px solid #844;border-radius:5px;color:#faa;font-size:0.68rem;cursor:pointer;';
+    rb.textContent='↺ Сброс';
+    rb.onclick=()=>{pCtrl[pi]={...DEF_CTRL[pi]};buildCtrlUI(cid,ctx2);};
     box.appendChild(rb);
     c.appendChild(box);
   }
 }
 
-function startListen(pi, action, context) {
-  if (listeningFor) {
-    const b = document.getElementById('kb-'+listeningContext+'-'+listeningFor.pi+'-'+listeningFor.a);
-    if (b) { b.classList.remove('listening'); b.textContent = keyName(pCtrl[listeningFor.pi][listeningFor.a]); }
+function startListen(pi, action, ctx2) {
+  if(listeningFor){
+    const b=document.getElementById('kb-'+listeningCtx+'-'+listeningFor.pi+'-'+listeningFor.a);
+    if(b){b.classList.remove('listening');b.textContent=keyName(pCtrl[listeningFor.pi][listeningFor.a]);}
   }
-  listeningFor = { pi, a: action };
-  listeningContext = context;
-  const btn = document.getElementById('kb-'+context+'-'+pi+'-'+action);
-  if (btn) { btn.classList.add('listening'); btn.textContent = '...'; }
+  listeningFor={pi,a:action};listeningCtx=ctx2;
+  const btn=document.getElementById('kb-'+ctx2+'-'+pi+'-'+action);
+  if(btn){btn.classList.add('listening');btn.textContent='...';}
 }
 
 function buildCostUI() {
-  const c = document.getElementById('cost-ui');
-  if (!c) return;
-  c.innerHTML = '';
-  for (let pi = 0; pi < 2; pi++) {
-    const box = document.createElement('div');
-    box.className = 'cost-box';
-    box.innerHTML = '<div class="'+(pi===0?'p1-c':'p2-c')+'" style="font-weight:800;font-size:0.84rem;">'+(pi===0?'⚡ ИГРОК 1':'⚡ ИГРОК 2')+'</div>';
-    const cvs = document.createElement('canvas');
-    cvs.width = 80; cvs.height = 96;
-    cvs.style.cssText = 'display:block;margin:6px auto;border-radius:6px;background:rgba(0,0,0,0.3);';
-    cvs.id = 'cprev-'+pi;
+  const c=document.getElementById('cost-ui');
+  if(!c) return;
+  c.innerHTML='';
+  for(let pi=0;pi<2;pi++){
+    const box=document.createElement('div');
+    box.className='cost-box';
+    // Имя игрока
+    const nameRow=document.createElement('div');
+    nameRow.innerHTML='<div class="'+(pi===0?'p1-c':'p2-c')+'" style="font-weight:800;font-size:0.84rem;">'+(pi===0?'⚡ ИГРОК 1':'⚡ ИГРОК 2')+'</div>';
+    box.appendChild(nameRow);
+    // Поле ввода имени
+    const ni=document.createElement('input');
+    ni.type='text';ni.className='name-inp';
+    ni.placeholder='Введи имя...';ni.maxLength=16;
+    ni.value=pNames[pi];
+    ni.addEventListener('input',()=>{pNames[pi]=ni.value||'ИГРОК '+(pi+1);});
+    ni.addEventListener('keydown',e=>e.stopPropagation());
+    box.appendChild(ni);
+    // Превью персонажа
+    const cvs=document.createElement('canvas');
+    cvs.width=80;cvs.height=100;
+    cvs.style.cssText='display:block;margin:8px auto;border-radius:8px;background:rgba(0,0,0,0.4);border:1px solid rgba(70,140,35,0.3);';
+    cvs.id='cprev-'+pi;
     box.appendChild(cvs);
-    drawCostPrev(pi, cvs);
-    const lbl = document.createElement('div');
-    lbl.style.cssText = 'font-size:0.76rem;color:#ccc;margin-bottom:4px;';
-    lbl.textContent = pCostumes[pi].name;
+    drawCostPrev(pi,cvs);
+    // Название костюма
+    const lbl=document.createElement('div');
+    lbl.style.cssText='font-size:0.8rem;color:#ccff88;margin-bottom:6px;font-weight:700;';
+    lbl.textContent=pCostumes[pi].name;
+    lbl.id='costlbl-'+pi;
     box.appendChild(lbl);
-    const opts = document.createElement('div');
-    opts.className = 'cost-opts';
-    COSTUMES.forEach(co => {
-      const opt = document.createElement('div');
-      opt.className = 'cost-opt'+(pCostumes[pi].id===co.id?' sel':'');
-      opt.title = co.name;
-      opt.style.background = co.body;
-      opt.innerHTML = '<span>'+co.icon+'</span>';
-      opt.onclick = () => { pCostumes[pi]=co; buildCostUI(); };
+    // Кнопки выбора
+    const opts=document.createElement('div');
+    opts.className='cost-opts';
+    COSTUMES.forEach(co=>{
+      const opt=document.createElement('div');
+      opt.className='cost-opt'+(pCostumes[pi].id===co.id?' sel':'');
+      opt.title=co.name;
+      opt.style.background=co.body;
+      opt.innerHTML='<span title="'+co.name+'">'+co.icon+'</span>';
+      opt.onclick=()=>{
+        pCostumes[pi]=co;
+        document.getElementById('costlbl-'+pi).textContent=co.name;
+        opts.querySelectorAll('.cost-opt').forEach((o,i)=>o.classList.toggle('sel',COSTUMES[i].id===co.id));
+        drawCostPrev(pi,document.getElementById('cprev-'+pi));
+      };
       opts.appendChild(opt);
     });
     box.appendChild(opts);
@@ -434,27 +477,46 @@ function buildCostUI() {
   }
 }
 
-function drawCostPrev(pi, cvs) {
-  const c2 = cvs.getContext('2d');
-  c2.clearRect(0,0,80,96);
-  const co = pCostumes[pi];
-  const cx=40, cy=62;
-  c2.fillStyle='rgba(0,0,0,0.22)';c2.beginPath();c2.ellipse(cx,cy+20,16,5,0,0,Math.PI*2);c2.fill();
+function drawCostPrev(pi,cvs){
+  const c2=cvs.getContext('2d');
+  c2.clearRect(0,0,80,100);
+  const co=pCostumes[pi];
+  const cx=40,cy=68;
+  // Тень
+  c2.fillStyle='rgba(0,0,0,0.3)';c2.beginPath();c2.ellipse(cx,cy+16,14,5,0,0,Math.PI*2);c2.fill();
+  // Ноги
   c2.fillStyle=co.det;c2.fillRect(cx-8,cy+4,6,14);c2.fillRect(cx+2,cy+4,6,14);
-  c2.fillStyle='#2a1a0a';c2.fillRect(cx-9,cy+16,8,5);c2.fillRect(cx+1,cy+16,8,5);
+  c2.fillStyle='#1a0a05';c2.fillRect(cx-9,cy+16,8,5);c2.fillRect(cx+1,cy+16,8,5);
+  // Тело
   c2.fillStyle=co.body;c2.fillRect(cx-11,cy-8,22,14);
+  // Детали на теле
   c2.fillStyle=co.det;c2.fillRect(cx-3,cy-6,6,2);c2.fillRect(cx-3,cy-2,6,2);
+  // Руки
   c2.fillStyle=co.body;c2.fillRect(cx-16,cy-7,5,12);c2.fillRect(cx+11,cy-7,5,12);
-  c2.fillStyle=co.head;c2.beginPath();c2.arc(cx,cy-20,11,0,Math.PI*2);c2.fill();
-  c2.fillStyle=co.helm;c2.fillRect(cx-13,cy-33,26,14);
-  c2.fillStyle='rgba(255,255,255,0.1)';c2.fillRect(cx-10,cy-32,12,4);
-  c2.fillStyle='#fff';c2.fillRect(cx-8,cy-22,5,5);c2.fillRect(cx+3,cy-22,5,5);
-  c2.fillStyle='#111';c2.fillRect(cx-7,cy-21,3,3);c2.fillRect(cx+4,cy-21,3,3);
+  // Перчатки
+  c2.fillStyle=co.det;c2.beginPath();c2.arc(cx-13,cy+5,3.5,0,Math.PI*2);c2.arc(cx+13,cy+5,3.5,0,Math.PI*2);c2.fill();
+  // Оружие
+  c2.fillStyle='#555';c2.fillRect(cx+13,cy+3,11,4);c2.fillStyle='#777';c2.fillRect(cx+21,cy+2,3,3);
+  // Шея
+  c2.fillStyle=co.head;c2.fillRect(cx-3,cy-14,6,8);
+  // Голова
+  c2.fillStyle=co.head;c2.beginPath();c2.arc(cx,cy-22,11,0,Math.PI*2);c2.fill();
+  // Шлем
+  c2.fillStyle=co.helm;c2.fillRect(cx-13,cy-34,26,14);
+  c2.fillStyle='rgba(255,255,255,0.08)';c2.fillRect(cx-10,cy-33,12,4);
+  // Глаза
+  c2.fillStyle='#fff';c2.fillRect(cx-8,cy-25,5,5);c2.fillRect(cx+3,cy-25,5,5);
+  c2.fillStyle='#0a0a22';c2.fillRect(cx-7,cy-24,3,3);c2.fillRect(cx+4,cy-24,3,3);
+  c2.fillStyle='rgba(255,255,255,0.6)';c2.fillRect(cx-7,cy-24,1.5,1.5);c2.fillRect(cx+4,cy-24,1.5,1.5);
+  // Нашивка игрока
+  const col=pi===0?'#0cf':'#f0f';
+  c2.fillStyle=col;c2.font='bold 9px sans-serif';c2.textAlign='center';c2.shadowBlur=6;c2.shadowColor=col;
+  c2.fillText('П'+(pi+1),cx,cy-37);c2.shadowBlur=0;
 }
 
 // ===== MENU TABS =====
-document.querySelectorAll('.menu-tab').forEach(t => {
-  t.addEventListener('click', () => {
+document.querySelectorAll('.menu-tab').forEach(t=>{
+  t.addEventListener('click',()=>{
     document.querySelectorAll('.menu-tab').forEach(x=>x.classList.remove('active'));
     document.querySelectorAll('.tab-panel').forEach(x=>x.classList.remove('active'));
     t.classList.add('active');
@@ -463,6 +525,10 @@ document.querySelectorAll('.menu-tab').forEach(t => {
 });
 buildCtrlUI('ctrl-ui','menu');
 buildCostUI();
+
+function showOnlineInfo(){
+  document.getElementById('online-info').classList.remove('hidden');
+}
 
 // ===== WEAPONS =====
 const WEAPONS = {
@@ -474,56 +540,56 @@ const WEAPONS = {
 };
 
 // ===== MAZE =====
-function makeGrid() {
-  for (let r=0;r<MAPSZ;r++) { maze[r]=[]; for(let c=0;c<MAPSZ;c++) maze[r][c]=1; }
-}
-function generateMaze() {
+function makeGrid(){ for(let r=0;r<MAPSZ;r++){maze[r]=[];for(let c=0;c<MAPSZ;c++)maze[r][c]=1;} }
+function generateMaze(){
   makeGrid();
   const stack=[]; maze[1][1]=0; stack.push({r:1,c:1});
   const dirs=[[0,-2],[0,2],[-2,0],[2,0]];
-  while (stack.length) {
-    const cur=stack[stack.length-1]; const nb=[];
+  while(stack.length){
+    const cur=stack[stack.length-1];const nb=[];
     for(const [dr,dc] of dirs){const nr=cur.r+dr,nc=cur.c+dc;if(nr>0&&nr<MAPSZ-1&&nc>0&&nc<MAPSZ-1&&maze[nr][nc]===1)nb.push({r:nr,c:nc,dr:dr/2,dc:dc/2});}
     if(nb.length){const nx=nb[Math.floor(Math.random()*nb.length)];maze[nx.r][nx.c]=0;maze[cur.r+nx.dr][cur.c+nx.dc]=0;stack.push({r:nx.r,c:nx.c});}
     else stack.pop();
   }
   const cr=20,cc=20;
-  for(let r=cr-4;r<=cr+4;r++) for(let c=cc-4;c<=cc+4;c++) if(maze[r]) maze[r][c]=0;
-  for(let d=-8;d<=8;d++){if(maze[cr+d])maze[cr+d][cc]=0;if(maze[cr])maze[cr][cc+d]=0;}
-  for(let i=0;i<22;i++){const r=2+Math.floor(Math.random()*(MAPSZ-4)),c=2+Math.floor(Math.random()*(MAPSZ-4));if(maze[r][c]===1){let w=0;for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++)if(maze[r+dr]&&maze[r+dr][c+dc]===1)w++;if(w>=6)maze[r][c]=0;}}
+  for(let r=cr-5;r<=cr+5;r++) for(let c=cc-5;c<=cc+5;c++) if(maze[r]) maze[r][c]=0;
+  for(let d=-9;d<=9;d++){if(maze[cr+d])maze[cr+d][cc]=0;if(maze[cr])maze[cr][cc+d]=0;}
+  for(let i=0;i<25;i++){
+    const r=2+Math.floor(Math.random()*(MAPSZ-4)),c=2+Math.floor(Math.random()*(MAPSZ-4));
+    if(maze[r][c]===1){let w=0;for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++)if(maze[r+dr]&&maze[r+dr][c+dc]===1)w++;if(w>=6)maze[r][c]=0;}
+  }
 }
-function buildTileRnd() {
-  for(let r=0;r<MAPSZ;r++){tileRnd[r]=[];for(let c=0;c<MAPSZ;c++)tileRnd[r][c]=Math.random();}
-}
+function buildTileRnd(){ for(let r=0;r<MAPSZ;r++){tileRnd[r]=[];for(let c=0;c<MAPSZ;c++)tileRnd[r][c]=Math.random();} }
 
 // ===== FLOOR CACHE =====
-function buildFloorCache() {
-  floorCache = document.createElement('canvas');
-  floorCache.width = MAPSZ*TILE; floorCache.height = MAPSZ*TILE;
-  const fc = floorCache.getContext('2d');
-  for(let r=0;r<MAPSZ;r++) {
-    for(let c=0;c<MAPSZ;c++) {
+function buildFloorCache(){
+  floorCache=document.createElement('canvas');
+  floorCache.width=MAPSZ*TILE;floorCache.height=MAPSZ*TILE;
+  const fc=floorCache.getContext('2d');
+  for(let r=0;r<MAPSZ;r++){
+    for(let c=0;c<MAPSZ;c++){
       const wx=c*TILE,wy=r*TILE,v=tileRnd[r][c];
-      if(maze[r][c]===0) {
+      if(maze[r][c]===0){
         const cols=['#14200e','#1a2812','#162010','#1e2a14','#121e0c'];
-        fc.fillStyle=cols[Math.floor(v*5)]; fc.fillRect(wx,wy,TILE,TILE);
+        fc.fillStyle=cols[Math.floor(v*5)];fc.fillRect(wx,wy,TILE,TILE);
         if(v>0.62){fc.fillStyle='rgba(45,100,20,0.18)';fc.beginPath();fc.ellipse(wx+(v*31%TILE),wy+(v*47%TILE),11,4,0,0,Math.PI*2);fc.fill();}
         if(v>0.85){fc.fillStyle='rgba(180,220,80,0.2)';fc.beginPath();fc.arc(wx+(v*53%TILE),wy+(v*37%TILE),3,0,Math.PI*2);fc.fill();}
         if(v>0.92){fc.fillStyle='rgba(80,55,20,0.14)';fc.beginPath();fc.ellipse(wx+v*30,wy+v*38,13,6,v,0,Math.PI*2);fc.fill();}
         fc.strokeStyle='rgba(0,0,0,0.05)';fc.lineWidth=0.5;fc.strokeRect(wx,wy,TILE,TILE);
       } else {
-        fc.fillStyle='#0c1406'; fc.fillRect(wx,wy,TILE,TILE);
-        if(v<0.48){
+        fc.fillStyle='#0c1406';fc.fillRect(wx,wy,TILE,TILE);
+        if(v<0.40){
           const cx2=wx+TILE/2,cy2=wy+TILE*0.76;
           fc.fillStyle='#5c3317';fc.fillRect(cx2-4,cy2-4,8,20);
           const layers=[{y:cy2-30,r:23,col:'#1a4a0a'},{y:cy2-42,r:17,col:'#1e5e0e'},{y:cy2-52,r:11,col:'#25781a'}];
           for(const l of layers){fc.fillStyle=l.col;fc.beginPath();fc.moveTo(cx2,l.y-l.r);fc.lineTo(cx2-l.r,l.y+l.r*0.6);fc.lineTo(cx2+l.r,l.y+l.r*0.6);fc.closePath();fc.fill();}
           fc.fillStyle='rgba(80,180,40,0.1)';fc.beginPath();fc.arc(cx2-4,cy2-48,7,0,Math.PI*2);fc.fill();
-        } else if(v<0.74){
+        } else if(v<0.68){
           const cx2=wx+TILE/2,cy2=wy+TILE*0.72;
           fc.fillStyle='#6b3a1a';fc.fillRect(cx2-5,cy2-4,10,18);
           fc.fillStyle='#1a5010';fc.beginPath();fc.arc(cx2,cy2-18,22,0,Math.PI*2);fc.fill();
           fc.fillStyle='#258020';fc.beginPath();fc.arc(cx2-4,cy2-22,15,0,Math.PI*2);fc.fill();
+          fc.fillStyle='rgba(40,160,20,0.14)';fc.beginPath();fc.arc(cx2+8,cy2-26,10,0,Math.PI*2);fc.fill();
         } else {
           const cx2=wx+TILE/2,cy2=wy+TILE/2;
           const rks=[{ox:-7,oy:5,rx:13,ry:9,col:'#3a3a3e'},{ox:7,oy:7,rx:10,ry:7,col:'#4a4a50'},{ox:1,oy:-3,rx:9,ry:6,col:'#2e2e33'}];
@@ -536,7 +602,7 @@ function buildFloorCache() {
 }
 
 function isWall(x,y){const r=Math.floor(y/TILE),c=Math.floor(x/TILE);if(r<0||r>=MAPSZ||c<0||c>=MAPSZ)return true;return maze[r][c]===1;}
-function colCheck(x,y,sz){const p=4;return isWall(x+p,y+p)||isWall(x+sz-p,y+p)||isWall(x+p,y+sz-p)||isWall(x+sz-p,y+sz-p);}
+function colCheck(x,y,sz){const p=3;return isWall(x+p,y+p)||isWall(x+sz-p,y+p)||isWall(x+p,y+sz-p)||isWall(x+sz-p,y+sz-p);}
 function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
 
 // ===== AUDIO =====
@@ -567,6 +633,7 @@ function sndMineExplode(){
   ensAudio();if(!audioCtx)return;
   playTone('sine',130,28,0.28,0.55,'lowpass',400);
   setTimeout(()=>playTone('sawtooth',700,90,0.12,0.28),30);
+  setTimeout(()=>playTone('triangle',440,80,0.08,0.2),60);
 }
 function sndReload(){
   ensAudio();if(!audioCtx)return;
@@ -581,18 +648,25 @@ function sndPickup(){
   playTone('triangle',520,620,0.04,0.12);
 }
 function sndBaseHit(){playTone('sawtooth',85,38,0.055,0.18,'lowpass',380);}
-function sndZombieHit(){playTone('sawtooth',130+Math.random()*40,50,0.022+Math.random()*0.01,0.13,'bandpass',260+Math.random()*80);}
+function sndZombieHit(){playTone('sawtooth',130+Math.random()*40,50,0.022,0.13,'bandpass',260+Math.random()*80);}
 function sndBarrelBreak(){
   ensAudio();if(!audioCtx)return;
   [0,0.06,0.14].forEach(d=>setTimeout(()=>playTone('sawtooth',320+Math.random()*180,75,0.055,0.08),d*1000));
 }
 function sndPlayerHit(){playTone('triangle',380,140,0.06,0.1,'lowpass',900);}
+
+// Звук волны - реальная морская/нарастающая волна
 function sndWaveAlert(){
   ensAudio();if(!audioCtx)return;
-  playTone('sawtooth',52,46,0.14,1.2,'lowpass',600);
-  setTimeout(()=>playTone('sawtooth',220,75,0.075,0.75),50);
-  [0,0.22,0.44].forEach(d=>setTimeout(()=>playTone('sawtooth',96,48,0.06,0.17),d*1000));
+  // Нарастающий гул - "волна"
+  playTone('sawtooth',40,180,0.18,1.4,'lowpass',500);
+  setTimeout(()=>playTone('sawtooth',60,260,0.14,1.2,'lowpass',600),200);
+  setTimeout(()=>playTone('sawtooth',80,350,0.10,1.0,'lowpass',700),400);
+  setTimeout(()=>playTone('sine',220,440,0.08,0.8,'lowpass',800),600);
+  // Зловещий удар
+  [0,0.28,0.56].forEach(d=>setTimeout(()=>playTone('sawtooth',92,44,0.07,0.22),d*1000));
 }
+
 function sndGroan(intensity){
   intensity=intensity||1;
   playTone('sawtooth',78+Math.random()*26,34+Math.random()*14,0.01+intensity*0.016,0.2+Math.random()*0.14,'bandpass',255+Math.random()*100);
@@ -612,12 +686,9 @@ function startAmbient(){
   ambTmr=setInterval(()=>{
     if(gState!=='PLAYING')return;
     ensAudio();if(!audioCtx)return;
-    // Сверчки
-    if(Math.random()<0.62)[0,0.09,0.18].forEach(d=>setTimeout(()=>playTone('sine',3100+Math.random()*500,null,0.004+Math.random()*0.002,0.07),d*1000));
-    // Ветер
-    if(Math.random()<0.32)playTone('sawtooth',0.8,null,0.007,2.0,'bandpass',370);
-    // Сова
-    if(Math.random()<0.09){playTone('sine',370,330,0.02,0.5,'lowpass',580);setTimeout(()=>playTone('sine',330,300,0.016,0.4,'lowpass',580),620);}
+    if(Math.random()<0.65)[0,0.09,0.18].forEach(d=>setTimeout(()=>playTone('sine',3100+Math.random()*500,null,0.004+Math.random()*0.002,0.07),d*1000));
+    if(Math.random()<0.35)playTone('sawtooth',0.8,null,0.007,2.0,'bandpass',370);
+    if(Math.random()<0.1){playTone('sine',370,330,0.02,0.5,'lowpass',580);setTimeout(()=>playTone('sine',330,300,0.016,0.4,'lowpass',580),620);}
     if(!zombies.length)return;
     const lp=getLiving();
     const fx=lp.length?lp.reduce((s,p)=>s+p.x,0)/lp.length:base.x;
@@ -703,39 +774,50 @@ function spawnInitSupplies(){ammoPickups=[];medPickups=[];for(let i=0;i<5;i++)sp
 function showWaveAnn(txt){
   const el=document.getElementById('wave-ann');
   el.innerHTML=txt;el.classList.add('show');
-  setTimeout(()=>el.classList.remove('show'),2400);
-  setTimeout(()=>sndWaveAlert(),80);
+  setTimeout(()=>el.classList.remove('show'),2600);
+  setTimeout(()=>sndWaveAlert(),100);
 }
 
-// Плавный рост: волна 1=6, 5=14, 10=20, 20=30, 50=44, 100=60
+// Плавный рост: волна 1=5, 5=12, 10=19, 20=28, 50=44, 100=58
 function zombieCount(w){
-  return Math.min(Math.floor(6 + w * 1.8 + Math.pow(w,0.7)), 60);
+  return Math.min(Math.floor(5 + w*1.4 + Math.pow(w,0.65)), 58);
+}
+
+// Количество боссов: на круглых волнах
+function bossCount(w){
+  if(w%10!==0)return 0;
+  if(w>=50)return 3;
+  if(w>=30)return 2;
+  return 1;
 }
 
 function nextWave(){
   wave++;
-  waveSpawning = true;
-  waveSpawned = 0;
-  showWaveAnn('🌊 ВОЛНА ' + wave);
+  waveSpawning=true;
+  waveSpawned=0;
+  showWaveAnn('🌊 ВОЛНА '+wave+(wave%10===0?'<br><span style="font-size:1.4rem;color:#ff8800;">⚠️ ВОЛНА БОССОВ!</span>':''));
 
-  const isBossWave = wave % 10 === 0;
-  const isSpec = wave >= 5;
-  let cnt = zombieCount(wave);
-  if(isBossWave){ spawnBoss(); cnt = Math.floor(cnt * 0.5); }
-  waveTotal = cnt;
+  const bc=bossCount(wave);
+  const isSpec=wave>=5;
+  let cnt=zombieCount(wave);
+  if(bc>0){
+    for(let b=0;b<bc;b++) setTimeout(()=>spawnBoss(), b*800);
+    cnt=Math.max(4, Math.floor(cnt*0.5));
+  }
+  waveTotal=cnt;
 
-  // Стаггерд-спавн: группы по 3 каждые 700мс
+  // Стаггерд-спавн: по 3 зомби каждые 700мс
   for(let i=0;i<cnt;i++){
-    const delay = Math.floor(i/3)*700 + Math.random()*200;
+    const delay=Math.floor(i/3)*700+Math.random()*200;
     setTimeout(()=>{
-      if(gState!=='PLAYING' && gState!=='SHOP')return;
+      if(gState!=='PLAYING'&&gState!=='SHOP')return;
       let t='normal';
-      if(isSpec && Math.random()<0.15) t = Math.random()<0.5 ? 'freezer' : 'spitter';
-      else if(wave%4===0 && Math.random()<0.2) t='leaper';
+      if(isSpec&&Math.random()<0.14) t=Math.random()<0.5?'freezer':'spitter';
+      else if(wave%4===0&&Math.random()<0.18) t='leaper';
       spawnZombie(t);
       waveSpawned++;
-      if(waveSpawned >= waveTotal) waveSpawning = false;
-    }, delay);
+      if(waveSpawned>=waveTotal) waveSpawning=false;
+    },delay);
   }
 
   if(wave%2===1)spawnSupply('ammo');
@@ -760,29 +842,41 @@ function spawnZombie(type){
     if(r>=0&&r<MAPSZ&&c>=0&&c<MAPSZ&&maze[r][c]===0)ok=true;
   }
   if(!ok)return;
-  // Скорости умеренные
-  let hp=40+wave*8, spd=1.45+wave*0.032, sz=28, rew=1;
-  if(type==='leaper'){hp=Math.floor(hp*0.7);spd=1.95+wave*0.038;sz=22;rew=2;}
-  else if(type==='freezer'){hp=Math.floor(hp*1.1);spd=1.28+wave*0.028;sz=30;rew=4;}
-  else if(type==='spitter'){hp=Math.floor(hp*0.88);spd=1.32+wave*0.028;sz=26;rew=4;}
+  // Скорости умеренные, плавный рост
+  let hp=40+wave*9,spd=1.35+wave*0.03,sz=28,rew=1;
+  if(type==='leaper'){hp=Math.floor(hp*0.7);spd=1.85+wave*0.035;sz=22;rew=2;}
+  else if(type==='freezer'){hp=Math.floor(hp*1.1);spd=1.2+wave*0.025;sz=30;rew=4;}
+  else if(type==='spitter'){hp=Math.floor(hp*0.88);spd=1.22+wave*0.025;sz=26;rew=4;}
   zombies.push({x:zx,y:zy,hp,maxHp:hp,spd,type,size:sz,lastLeap:0,leaping:false,leapVx:0,leapVy:0,lastSpit:0,rew,stuckT:0,lastX:zx,lastY:zy,wOff:Math.random()*Math.PI*2,aggroTimer:0});
 }
+
 function spawnBoss(){
   const side=Math.floor(Math.random()*4);
   let bx,by;
-  if(side===0){bx=(1+Math.random()*(MAPSZ-2))*TILE;by=TILE;}
-  else if(side===1){bx=(1+Math.random()*(MAPSZ-2))*TILE;by=(MAPSZ-2)*TILE;}
-  else if(side===2){bx=TILE;by=(1+Math.random()*(MAPSZ-2))*TILE;}
-  else{bx=(MAPSZ-2)*TILE;by=(1+Math.random()*(MAPSZ-2))*TILE;}
-  zombies.push({x:bx,y:by,hp:1200+wave*180,maxHp:1200+wave*180,spd:1.15+wave*0.025,type:'boss',size:48,lastAttack:0,rew:8,stuckT:0,lastX:bx,lastY:by,wOff:0,lastSpit:0,leaping:false,leapVx:0,leapVy:0,aggroTimer:0});
+  if(side===0){bx=(1+Math.random()*(MAPSZ-2))*TILE;by=TILE*2;}
+  else if(side===1){bx=(1+Math.random()*(MAPSZ-2))*TILE;by=(MAPSZ-3)*TILE;}
+  else if(side===2){bx=TILE*2;by=(1+Math.random()*(MAPSZ-2))*TILE;}
+  else{bx=(MAPSZ-3)*TILE;by=(1+Math.random()*(MAPSZ-2))*TILE;}
+  // Найдём открытый тайл рядом
+  const r=Math.floor(by/TILE),c=Math.floor(bx/TILE);
+  if(r>=0&&r<MAPSZ&&c>=0&&c<MAPSZ&&maze[r][c]!==0){
+    bx=c*TILE+TILE/2;by=r*TILE+TILE/2;
+  }
+  zombies.push({x:bx,y:by,hp:1100+wave*160,maxHp:1100+wave*160,spd:1.05+wave*0.022,type:'boss',size:BOSS_SIZE,lastAttack:0,rew:10,stuckT:0,lastX:bx,lastY:by,wOff:0,lastSpit:0,leaping:false,leapVx:0,leapVy:0,aggroTimer:0});
 }
 
 // ===== INIT =====
 function initGame(){
   generateMaze();buildTileRnd();buildFloorCache();
+  // Обновляем имена из инпутов
+  const n1=document.querySelector('#cost-ui input:nth-of-type(1)');
+  const n2=document.querySelector('#cost-ui input:nth-of-type(2)');
+  if(n1&&n1.value)pNames[0]=n1.value;
+  if(n2&&n2.value)pNames[1]=n2.value;
+
   players=[
-    {id:1,x:base.x-52,y:base.y-20,hp:100,maxHp:100,spd:3.5,size:28,color:'#0cf',weapon:'pistol',ammo:12,lastFire:0,reloading:false,reserve:AMMO_MAX,mines:0,barrels:0,controls:pCtrl[0],frozen:0,slow:1,stText:'',stUntil:0,costume:pCostumes[0],walk:0,carryAmmo:0,carryMed:0},
-    {id:2,x:base.x+24,y:base.y-20,hp:100,maxHp:100,spd:3.5,size:28,color:'#f0f',weapon:'pistol',ammo:12,lastFire:0,reloading:false,reserve:AMMO_MAX,mines:0,barrels:0,controls:pCtrl[1],frozen:0,slow:1,stText:'',stUntil:0,costume:pCostumes[1],walk:0,carryAmmo:0,carryMed:0}
+    {id:1,x:base.x-52,y:base.y-20,hp:100,maxHp:100,spd:3.5,size:28,color:'#0cf',weapon:'pistol',ammo:12,lastFire:0,reloading:false,reserve:AMMO_MAX,mines:0,barrels:0,controls:pCtrl[0],frozen:0,slow:1,stText:'',stUntil:0,costume:pCostumes[0],walk:0,carryAmmo:0,carryMed:0,name:pNames[0]},
+    {id:2,x:base.x+24,y:base.y-20,hp:100,maxHp:100,spd:3.5,size:28,color:'#f0f',weapon:'pistol',ammo:12,lastFire:0,reloading:false,reserve:AMMO_MAX,mines:0,barrels:0,controls:pCtrl[1],frozen:0,slow:1,stText:'',stUntil:0,costume:pCostumes[1],walk:0,carryAmmo:0,carryMed:0,name:pNames[1]}
   ];
   zombies=[];bullets=[];droppedCoins=[];bossProj=[];mines=[];barrels=[];poisonPools=[];tpQueue=[];dmgNums=[];
   wave=0;gCoins=0;tick=0;lastTP=0;ammoCD=0;medCD=0;
@@ -807,32 +901,17 @@ function initGame(){
 }
 
 function goMainMenu(){
-  gState='MENU';
-  stopAmbient();
+  gState='MENU';stopAmbient();
   document.getElementById('ui-menu').classList.remove('hidden');
   document.getElementById('ui-death').classList.add('hidden');
   document.getElementById('ui-pause').classList.add('hidden');
   document.getElementById('ui-pause-ctrl').classList.add('hidden');
   document.getElementById('ui-shop').classList.add('hidden');
 }
-
-function openPause(){
-  if(gState!=='PLAYING')return;
-  gState='PAUSE';
-  document.getElementById('ui-pause').classList.remove('hidden');
-}
-function closePause(){
-  document.getElementById('ui-pause').classList.add('hidden');
-  document.getElementById('ui-pause-ctrl').classList.add('hidden');
-  gState='PLAYING';
-}
-function showPauseControls(){
-  buildCtrlUI('pause-ctrl-ui','pause');
-  document.getElementById('ui-pause-ctrl').classList.remove('hidden');
-}
-function closePauseControls(){
-  document.getElementById('ui-pause-ctrl').classList.add('hidden');
-}
+function openPause(){if(gState!=='PLAYING')return;gState='PAUSE';document.getElementById('ui-pause').classList.remove('hidden');}
+function closePause(){document.getElementById('ui-pause').classList.add('hidden');document.getElementById('ui-pause-ctrl').classList.add('hidden');gState='PLAYING';}
+function showPauseControls(){buildCtrlUI('pause-ctrl-ui','pause');document.getElementById('ui-pause-ctrl').classList.remove('hidden');}
+function closePauseControls(){document.getElementById('ui-pause-ctrl').classList.add('hidden');}
 
 // ===== COMBAT =====
 function shoot(p,tx,ty){
@@ -853,10 +932,10 @@ function doReload(p){
   if(p.reloading||p.hp<=0)return;
   const w=WEAPONS[p.weapon];
   if(p.ammo===w.clip)return;
-  if(p.reserve<=0){setSt(p,'НУЖЕН ЯЩИК С ПАТРОНАМИ',1500);updateUI();return;}
+  if(p.reserve<=0){setSt(p,'НУЖЕН ЯЩИК С ПАТРОНАМИ!',1500);updateUI();return;}
   p.reloading=true;p.reserve--;updateUI();
   sndReload();
-  setTimeout(()=>{p.ammo=w.clip;p.reloading=false;updateUI();},w.reload);
+  setTimeout(()=>{if(p.hp>0){p.ammo=w.clip;p.reloading=false;updateUI();}},w.reload);
 }
 function placeMine(p){
   if(p.hp<=0||gState!=='PLAYING')return;
@@ -866,41 +945,21 @@ function placeMine(p){
 function placeBarrel(p){
   if(p.hp<=0||gState!=='PLAYING')return;
   if(p.barrels>0){
-    // Ставим бочку рядом с игроком, немного впереди
     barrels.push({x:p.x+p.size/2,y:p.y+p.size/2,hp:BARREL_HP,maxHp:BARREL_HP});
     p.barrels--;updateUI();
   } else setSt(p,'НЕТ БОЧЕК!',700);
 }
-
-// Взаимодействие со складом базы
 function interactDepot(p){
   if(p.hp<=0||gState!=='PLAYING')return;
   const dist=Math.hypot((p.x+p.size/2)-base.x,(p.y+p.size/2)-base.y);
-  if(dist>BASE_DEPOT_RADIUS){setSt(p,'ПОДОЙДИ К БАЗЕ!',900);return;}
-
+  if(dist>BASE_DEPOT_R){setSt(p,'ПОДОЙДИ К БАЗЕ!',900);return;}
   let acted=false;
-
-  // Если несёшь патроны — положи в склад
-  if(p.carryAmmo>0){
-    depotAmmo+=p.carryAmmo;p.carryAmmo=0;acted=true;sndPickup();
-    setSt(p,'📦 ПАТРОНЫ СДАНЫ НА СКЛАД',1000);
-  }
-  // Если несёшь аптечку — положи в склад
-  if(p.carryMed>0){
-    depotMed+=p.carryMed;p.carryMed=0;acted=true;sndPickup();
-    setSt(p,'📦 АПТЕЧКА СДАНА НА СКЛАД',1000);
-  }
-  // Если ничего не несёшь — попробуй взять из склада
+  if(p.carryAmmo>0){depotAmmo+=p.carryAmmo;p.carryAmmo=0;acted=true;sndPickup();setSt(p,'📦 ПАТРОНЫ СДАНЫ НА СКЛАД',1000);}
+  if(p.carryMed>0){depotMed+=p.carryMed;p.carryMed=0;acted=true;sndPickup();setSt(p,'📦 АПТЕЧКА СДАНА НА СКЛАД',1000);}
   if(!acted){
-    if(depotAmmo>0 && p.reserve<AMMO_MAX){
-      depotAmmo--;p.reserve=AMMO_MAX;p.ammo=WEAPONS[p.weapon].clip;p.reloading=false;
-      sndPickup();setSt(p,'🔫 ВЗЯЛ ПАТРОНЫ СО СКЛАДА',1000);acted=true;
-    } else if(depotMed>0 && p.hp<p.maxHp){
-      depotMed--;p.hp=Math.min(p.maxHp,p.hp+60);
-      sndHeal();setSt(p,'💊 ВЗЯЛ АПТЕЧКУ СО СКЛАДА',1000);acted=true;
-    } else {
-      setSt(p,'СКЛАД ПУСТ ИЛИ НЕ НУЖНО',900);
-    }
+    if(depotAmmo>0&&p.reserve<AMMO_MAX){depotAmmo--;p.reserve=AMMO_MAX;p.ammo=WEAPONS[p.weapon].clip;p.reloading=false;sndPickup();setSt(p,'🔫 ВЗЯЛ ПАТРОНЫ СО СКЛАДА',1000);acted=true;}
+    else if(depotMed>0&&p.hp<p.maxHp){depotMed--;p.hp=Math.min(p.maxHp,p.hp+60);sndHeal();setSt(p,'💊 ВЗЯЛ АПТЕЧКУ СО СКЛАДА',1000);acted=true;}
+    else setSt(p,'СКЛАД ПУСТ ИЛИ НЕ НУЖНО',900);
   }
   updateUI();
 }
@@ -936,7 +995,7 @@ function renderShop(){
 function buyWeapon(key){if(gCoins>=WEAPONS[key].cost){gCoins-=WEAPONS[key].cost;WEAPONS[key].owned=true;updateUI();renderShop();}}
 function buyMines(cost,pid){const p=players.find(pl=>pl.id===pid);if(!p)return;if(gCoins>=cost&&p.mines<9){gCoins-=cost;p.mines+=3;updateUI();renderShop();}}
 function buyBarrels(cost,pid){const p=players.find(pl=>pl.id===pid);if(!p)return;if(gCoins>=cost&&p.barrels<8){gCoins-=cost;p.barrels+=2;updateUI();renderShop();}}
-// equip НЕ восстанавливает патроны
+// equip НЕ восстанавливает патроны!
 function equip(key,pid){const p=players.find(pl=>pl.id===pid);if(!p)return;p.weapon=key;p.reloading=false;updateUI();}
 
 // ===== UI =====
@@ -944,8 +1003,7 @@ function updateBaseUI(){
   const ratio=Math.max(0,base.hp/base.maxHp);
   for(let i=0;i<4;i++){
     const ss=i/4,se=(i+1)/4,fill=Math.max(0,Math.min(1,(ratio-ss)/(se-ss)));
-    const el=document.getElementById('bs'+i);
-    if(!el)continue;
+    const el=document.getElementById('bs'+i);if(!el)continue;
     el.style.width=fill*100+'%';
     el.classList.toggle('low',ratio>0&&ratio<0.35);
     el.classList.toggle('empty',fill<=0);
@@ -965,6 +1023,7 @@ function updateUI(){
   if(players.length<2)return;
   for(const p of players){
     const px='p'+p.id;
+    document.getElementById(px+'-name').innerText=p.name||('ИГРОК '+p.id);
     document.getElementById(px+'-hp').style.width=Math.max(0,(p.hp/p.maxHp)*100)+'%';
     const w=WEAPONS[p.weapon];
     document.getElementById(px+'-weapon').innerText=w.name+' ('+(p.reloading?'перезарядка...':p.ammo+'/'+w.clip)+')';
@@ -974,7 +1033,7 @@ function updateUI(){
     let st='';
     if(p.frozen>0)st='❄️ ЗАМОРОЖЕН!';
     else if(p.stUntil>Date.now())st=p.stText||'';
-    else if(p.ammo===0&&p.reserve<=0)st='ПАТРОНЫ КОНЧИЛИСЬ';
+    else if(p.ammo===0&&p.reserve<=0)st='ПАТРОНЫ КОНЧИЛИСЬ!';
     document.getElementById(px+'-st').innerText=st;
   }
   updateBaseUI();
@@ -987,15 +1046,13 @@ window.addEventListener('keydown',e=>{
     e.preventDefault();
     pCtrl[listeningFor.pi][listeningFor.a]=e.code;
     if(players.length>0)players[listeningFor.pi].controls=pCtrl[listeningFor.pi];
-    const wasContext=listeningContext;
-    listeningFor=null;
-    buildCtrlUI(wasContext==='pause'?'pause-ctrl-ui':'ctrl-ui', wasContext);
+    const wasCtx=listeningCtx;listeningFor=null;
+    buildCtrlUI(wasCtx==='pause'?'pause-ctrl-ui':'ctrl-ui',wasCtx);
     return;
   }
   const stop=['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'];
   if(stop.includes(e.code))e.preventDefault();
   keys[e.code]=true;
-
   if(e.code==='Escape'){
     if(gState==='PLAYING')openPause();
     else if(gState==='PAUSE')closePause();
@@ -1003,7 +1060,6 @@ window.addEventListener('keydown',e=>{
     return;
   }
   if(e.code==='KeyB'){toggleShop();return;}
-
   if((gState==='PLAYING'||gState==='SHOP')&&players.length>=2){
     if(e.code===pCtrl[0].reload)doReload(players[0]);
     if(e.code===pCtrl[1].reload)doReload(players[1]);
@@ -1016,7 +1072,6 @@ window.addEventListener('keydown',e=>{
   }
 });
 window.addEventListener('keyup',e=>{keys[e.code]=false;});
-canvas.addEventListener('mousemove',e=>{const r=canvas.getBoundingClientRect();});
 canvas.addEventListener('mousedown',e=>{if(e.button===0)mDown=true;});
 canvas.addEventListener('mouseup',()=>mDown=false);
 canvas.addEventListener('mouseleave',()=>mDown=false);
@@ -1039,19 +1094,18 @@ function trySpawn(){
 function update(){
   if(gState!=='PLAYING')return;
   tick++;
-
   fpsCnt++;
   const nowT=performance.now();
   if(nowT-fpsLast>=1000){fpsVal=fpsCnt;fpsCnt=0;fpsLast=nowT;}
   pingTmr++;
   if(pingTmr>300){pingVal=Math.floor(Math.random()*14+4);pingTmr=0;}
-  document.getElementById('fps-c').textContent='FPS: '+fpsVal+' | PING: '+pingVal+'ms';
+  document.getElementById('fps-c').textContent='FPS: '+fpsVal+' | PING: '+pingVal+'мс';
 
   if(ammoCD>0)ammoCD--;
   if(medCD>0)medCD--;
 
-  // Flow field каждые 12 тиков
-  if(tick%12===0){
+  // Flow field каждые 14 тиков (оптимизация)
+  if(tick%14===0){
     const lp=getLiving();
     updateFF(flowP,lp.map(p=>({x:p.x+p.size/2,y:p.y+p.size/2})));
     if(base.hp>0)updateFF(flowB,[{x:base.x,y:base.y}]);
@@ -1105,15 +1159,14 @@ function update(){
     for(const p of players){
       if(p.hp<=0)continue;
       if(Math.hypot((p.x+p.size/2)-a.x,(p.y+p.size/2)-a.y)<34){
-        if(p.reserve<AMMO_MAX || p.ammo<WEAPONS[p.weapon].clip){
-          // Полный резерв и обойма
+        if(p.reserve<AMMO_MAX||p.ammo<WEAPONS[p.weapon].clip){
+          // ПОЛНЫЙ резерв и обойма
           p.reserve=AMMO_MAX;
           p.ammo=WEAPONS[p.weapon].clip;
           p.reloading=false;
           ammoPickups.splice(i,1);ammoCD=120;taken=true;
-          sndPickup();setSt(p,'🔫 ПАТРОНЫ ПОПОЛНЕНЫ!',900);updateUI();
+          sndPickup();setSt(p,'🔫 ПАТРОНЫ ПОПОЛНЕНЫ ПОЛНОСТЬЮ!',900);updateUI();
         } else if(p.carryAmmo<3){
-          // Несём на склад
           p.carryAmmo++;
           ammoPickups.splice(i,1);ammoCD=80;taken=true;
           sndPickup();setSt(p,'🔫 НЕСУ НА СКЛАД ('+p.carryAmmo+')',900);updateUI();
@@ -1138,7 +1191,6 @@ function update(){
           medPickups.splice(i,1);medCD=180;taken=true;
           sndHeal();setSt(p,'💊 +45 ХП',800);updateUI();
         } else if(p.carryMed<2){
-          // Несём на склад
           p.carryMed++;
           medPickups.splice(i,1);medCD=120;taken=true;
           sndPickup();setSt(p,'💊 НЕСУ НА СКЛАД ('+p.carryMed+')',900);updateUI();
@@ -1155,13 +1207,12 @@ function update(){
   for(let i=bullets.length-1;i>=0;i--){
     const b=bullets[i];b.x+=b.vx;b.y+=b.vy;
     if(isWall(b.x,b.y)||b.x<0||b.x>MAPSZ*TILE||b.y<0||b.y>MAPSZ*TILE){bullets.splice(i,1);continue;}
-    // Пуля проходит сквозь бочки (бочки только для зомби)
     let hit=false;
     for(let j=zombies.length-1;j>=0;j--){
       const z=zombies[j];
       if(Math.hypot(b.x-(z.x+z.size/2),b.y-(z.y+z.size/2))<z.size/2+5){
         z.hp-=b.dmg;
-        z.aggroTimer=180; // агро при попадании
+        z.aggroTimer=220;
         dmgNums.push({x:z.x+z.size/2+(Math.random()-0.5)*10,y:z.y-8,val:Math.round(b.dmg),life:50,max:50,crit:b.dmg>60,isPlayer:false});
         if(Math.random()<0.26)sndZombieHit();
         hit=true;
@@ -1195,18 +1246,16 @@ function update(){
     if(pool.timer<=0)poisonPools.splice(i,1);
   }
 
-  // МИНЫ — AoE взрыв, убивает 2-3 зомби
+  // МИНЫ — AoE взрыв, убивает до 3 зомби
   for(let i=mines.length-1;i>=0;i--){
     const m=mines[i];m.timer++;
-    let exploded=false;
-    let killCount=0;
+    let exploded=false,killCount=0;
     for(let j=zombies.length-1;j>=0;j--){
       const z=zombies[j];
       if(Math.hypot(m.x-(z.x+z.size/2),m.y-(z.y+z.size/2))<MINE_RADIUS){
         dmgNums.push({x:z.x+z.size/2+(Math.random()-0.5)*12,y:z.y-10,val:Math.round(z.hp),life:65,max:65,crit:true,isPlayer:false});
         for(let k=0;k<z.rew;k++)droppedCoins.push({x:z.x+z.size/2+(Math.random()-0.5)*18,y:z.y+z.size/2+(Math.random()-0.5)*18,val:1,hover:0});
-        zombies.splice(j,1);
-        exploded=true;killCount++;
+        zombies.splice(j,1);exploded=true;killCount++;
         if(killCount>=3)break;
       }
     }
@@ -1227,9 +1276,9 @@ function update(){
     if(z.aggroTimer>0)z.aggroTimer--;
     const aggroed=z.aggroTimer>0;
 
-    const bias=z.type==='boss'?240:z.type==='spitter'?200:160;
-    // Зомби преследует игрока: если агрирован, или игрок близко с небольшим шансом
-    const chasePlayer=!!np&&(aggroed||(npd<bias&&(npd<90||Math.random()<0.18)));
+    // Зомби идёт на игрока если: агрирован, или игрок близко
+    const bias=z.type==='boss'?280:z.type==='spitter'?220:180;
+    const chasePlayer=!!np&&(aggroed||(npd<bias&&(npd<100||Math.random()<0.22)));
     const target=chasePlayer?np:base;
     const field=chasePlayer?flowP:flowB;
     const tcx=target.x+(target.size||TILE)/2,tcy=target.y+(target.size||TILE)/2;
@@ -1238,7 +1287,7 @@ function update(){
     let vx=0,vy=0;
     if(fl.d<99999&&(fl.x!==0||fl.y!==0)){const mg=Math.hypot(fl.x,fl.y)||1;const noise=Math.sin(tick*0.04+z.wOff)*(chasePlayer?0.05:0.02);vx=fl.x/mg+noise;vy=fl.y/mg+noise;}
     else{vx=(tcx-zcx)/td;vy=(tcy-zcy)/td;}
-    const wp=wallAvoid(zcx,zcy,z.type==='boss'?138:104);
+    const wp=wallAvoid(zcx,zcy,z.type==='boss'?120:100);
     const ws=chasePlayer?(npd<120?0.18:0.5):1.1;
     vx+=wp.x*ws;vy+=wp.y*ws;
     const mm=Math.hypot(vx,vy)||1;
@@ -1250,13 +1299,22 @@ function update(){
       z.leaping=true;z.lastLeap=Date.now();
       setTimeout(()=>{if(z)z.leaping=false;},230);
     }
-    // Spitter
+    // Spitter — снаряд летит прямо в игрока (ближе к ногам)
     if(z.type==='spitter'&&Date.now()-z.lastSpit>3000){
+      const spitTgt=chasePlayer?np:null;
       const sd=chasePlayer?npd:bd;
-      if(target&&sd<240&&sd>65){
+      if(spitTgt&&sd<220&&sd>55){
         z.lastSpit=Date.now();
-        const ang=Math.atan2((target.y+(target.size||TILE)/2)-zcy,(target.x+(target.size||TILE)/2)-zcx);
-        bossProj.push({x:zcx,y:zcy,vx:Math.cos(ang)*3.9,vy:Math.sin(ang)*3.9,type:'poison',dmg:10});
+        // Целимся прямо в центр игрока
+        const tpx=spitTgt.x+spitTgt.size/2;
+        const tpy=spitTgt.y+spitTgt.size/2; // ноги персонажа
+        const ang=Math.atan2(tpy-zcy,tpx-zcx);
+        bossProj.push({x:zcx,y:zcy,vx:Math.cos(ang)*3.6,vy:Math.sin(ang)*3.6,type:'poison',dmg:10});
+      } else if(!chasePlayer&&bd<240&&bd>65){
+        // Стреляет в базу
+        z.lastSpit=Date.now();
+        const ang=Math.atan2(base.y-zcy,base.x-zcx);
+        bossProj.push({x:zcx,y:zcy,vx:Math.cos(ang)*3.6,vy:Math.sin(ang)*3.6,type:'poison',dmg:10});
       }
     }
     // Freezer
@@ -1264,7 +1322,7 @@ function update(){
     // Boss
     if(z.type==='boss'&&Date.now()-z.lastAttack>2200){
       const tgt=chasePlayer?np:base;const dist2=chasePlayer?npd:bd;
-      if(tgt&&dist2<340&&dist2>80){
+      if(tgt&&dist2<360&&dist2>80){
         z.lastAttack=Date.now();
         for(let ai=0;ai<3;ai++){
           const ang=Math.atan2((tgt.y+(tgt.size||TILE)/2)-zcy,(tgt.x+(tgt.size||TILE)/2)-zcx)+(ai-1)*0.26;
@@ -1276,17 +1334,14 @@ function update(){
     if(z.leaping){if(!colCheck(z.x+z.leapVx,z.y,z.size))z.x+=z.leapVx;if(!colCheck(z.x,z.y+z.leapVy,z.size))z.y+=z.leapVy;}
     else moveZ(z,vx,vy);
 
-    // БОЧКИ — зомби блокируются, не могут пройти
+    // БОЧКИ — зомби блокируются
     for(let bi=barrels.length-1;bi>=0;bi--){
       const bar=barrels[bi];
       const bd2=Math.hypot(zcx-bar.x,zcy-bar.y);
       if(bd2<BARREL_R+z.size/2){
-        // Отталкиваем зомби от бочки
         const pushAngle=Math.atan2(zcy-bar.y,zcx-bar.x);
         const overlap=BARREL_R+z.size/2-bd2+1;
-        z.x+=Math.cos(pushAngle)*overlap;
-        z.y+=Math.sin(pushAngle)*overlap;
-        // Зомби бьёт бочку
+        z.x+=Math.cos(pushAngle)*overlap;z.y+=Math.sin(pushAngle)*overlap;
         if(tick%6===0){
           const fdmg=z.type==='boss'?8:z.type==='leaper'?3:2;
           bar.hp-=fdmg;
@@ -1298,8 +1353,7 @@ function update(){
     // Атака базы
     if(base.alive&&bd<base.radius+z.size*0.55&&tick%6===0){
       const dmg=z.type==='boss'?2.5:z.type==='leaper'?1.1:z.type==='freezer'?0.7:z.type==='spitter'?0.9:1.0;
-      base.hp-=dmg;
-      if(tick%28===0)sndBaseHit();
+      base.hp-=dmg;if(tick%28===0)sndBaseHit();
       if(base.hp<=0){base.hp=0;base.alive=false;endGame('Домик и раненый уничтожены');break;}
     }
 
@@ -1310,8 +1364,7 @@ function update(){
         let dmg=z.type==='boss'?2.0:z.type==='leaper'?1.3:z.type==='freezer'?0.65:z.type==='spitter'?0.8:0.9;
         p.hp-=dmg;
         dmgNums.push({x:p.x+p.size/2+(Math.random()-0.5)*8,y:p.y-4,val:Math.round(dmg*10)/10,life:44,max:44,crit:false,isPlayer:true});
-        sndPlayerHit();
-        if(Math.random()<0.12)sndGroan(1.1);
+        sndPlayerHit();if(Math.random()<0.12)sndGroan(1.1);
       }
     }
 
@@ -1319,7 +1372,7 @@ function update(){
     const mv=Math.abs(z.x-z.lastX)+Math.abs(z.y-z.lastY);
     if(mv<0.4)z.stuckT++;else z.stuckT=0;
     z.lastX=z.x;z.lastY=z.y;
-    if(z.stuckT>420&&!tpQueue.includes(z)){tpQueue.push(z);z.stuckT=0;}
+    if(z.stuckT>380&&!tpQueue.includes(z)){tpQueue.push(z);z.stuckT=0;}
   }
 
   // Телепорт застрявших
@@ -1334,8 +1387,8 @@ function update(){
   if(players.every(p=>p.hp<=0))endGame('Оба бойца погибли');
   if(gState!=='PLAYING'){updateUI();return;}
 
-  // ВАЖНО: следующая волна только если все зомби убиты И спавн завершён
-  if(zombies.length===0 && !waveSpawning) nextWave();
+  // ВАЖНО: следующая волна только если ВСЕ зомби убиты И спавн завершён
+  if(zombies.length===0&&!waveSpawning) nextWave();
 
   trySpawn();
   updateUI();
@@ -1364,23 +1417,31 @@ function drawBase(){
   ctx.fillStyle='#fff';ctx.fillRect(x-10,y-38,20,16);
   ctx.fillStyle='#ff2222';ctx.fillRect(x-8,y-36,16,6);ctx.fillRect(x-3,y-38,6,16);
 
-  // Склад (ящики) рядом с базой
-  const bx1=x-h2-42, by1=y+10;
-  const bx2=x+h2+18, by2=y+10;
-  for(const [bxd,byd] of [[bx1,by1],[bx2,by2]]){
-    ctx.fillStyle='#5c3a1a';ctx.fillRect(bxd,byd,28,20);
-    ctx.fillStyle='#8b5c2a';ctx.fillRect(bxd+2,byd+2,24,4);
-    ctx.fillStyle='rgba(255,255,255,0.06)';ctx.fillRect(bxd+2,byd+2,10,4);
-    ctx.strokeStyle='#3a2210';ctx.lineWidth=1;ctx.strokeRect(bxd,byd,28,20);
-    ctx.fillStyle='rgba(255,220,50,0.7)';ctx.font='bold 9px sans-serif';ctx.textAlign='center';
-    ctx.fillText('📦',bxd+14,byd+14);
-  }
+  // СКЛАД — СИНИЙ (патроны) и КРАСНЫЙ (аптечки), чётко выражены
+  const bx1=x-h2-48, by1=y+8;
+  const bx2=x+h2+20, by2=y+8;
+  // Синий склад (патроны)
+  ctx.fillStyle='#1a2a5a';ctx.fillRect(bx1-2,by1-2,36,28);
+  ctx.fillStyle='#2244aa';ctx.fillRect(bx1,by1,32,24);
+  ctx.strokeStyle='#4488ff';ctx.lineWidth=2;ctx.strokeRect(bx1,by1,32,24);
+  ctx.fillStyle='#88bbff';ctx.fillRect(bx1+2,by1+2,28,4);
+  ctx.fillStyle='rgba(255,255,255,0.7)';ctx.font='bold 9px sans-serif';ctx.textAlign='center';
+  ctx.fillText('🔫',bx1+16,by1+18);
+  ctx.fillStyle='rgba(100,180,255,0.4)';ctx.shadowBlur=8;ctx.shadowColor='#4488ff';ctx.strokeRect(bx1,by1,32,24);ctx.shadowBlur=0;
+  // Красный склад (аптечки)
+  ctx.fillStyle='#5a1a1a';ctx.fillRect(bx2-2,by2-2,36,28);
+  ctx.fillStyle='#aa2244';ctx.fillRect(bx2,by2,32,24);
+  ctx.strokeStyle='#ff4488';ctx.lineWidth=2;ctx.strokeRect(bx2,by2,32,24);
+  ctx.fillStyle='#ffbbcc';ctx.fillRect(bx2+2,by2+2,28,4);
+  ctx.fillStyle='rgba(255,255,255,0.7)';ctx.font='bold 9px sans-serif';ctx.textAlign='center';
+  ctx.fillText('💊',bx2+16,by2+18);
+  ctx.fillStyle='rgba(255,100,160,0.4)';ctx.shadowBlur=8;ctx.shadowColor='#ff4488';ctx.strokeRect(bx2,by2,32,24);ctx.shadowBlur=0;
+  // Подписи под складами
+  ctx.fillStyle='rgba(150,200,255,0.9)';ctx.font='bold 7px sans-serif';ctx.textAlign='center';
+  ctx.fillText('ПАТРОНЫ',bx1+16,by1+32);
+  ctx.fillStyle='rgba(255,150,180,0.9)';
+  ctx.fillText('АПТЕЧКИ',bx2+16,by2+32);
 
-  // Указатель дистанции до склада
-  const px2=x+1,py2=y+18;
-  ctx.fillStyle='#f1c8a3';ctx.beginPath();ctx.arc(px2,py2-12,8,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle='#ddd';ctx.fillRect(px2-9,py2-6,18,16);
-  ctx.fillStyle='#ff4747';ctx.fillRect(px2-2,py2-1,5,11);ctx.fillRect(px2-7,py2+4,13,5);
   if(hr<0.35&&base.hp>0){
     ctx.strokeStyle='rgba(255,80,80,'+(0.5+Math.sin(Date.now()/120)*0.3)+')';
     ctx.lineWidth=3;ctx.beginPath();ctx.arc(x,y,base.radius+10+Math.sin(Date.now()/120)*2,0,Math.PI*2);ctx.stroke();
@@ -1397,30 +1458,38 @@ function drawBase(){
 function drawPlayer(p){
   const co=p.costume||COSTUMES[0];
   const cx=p.x+p.size/2,cy=p.y+p.size/2+4,ph=p.walk||0;
-  ctx.fillStyle='rgba(0,0,0,0.26)';ctx.beginPath();ctx.ellipse(cx,cy+13,12,4,0,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='rgba(0,0,0,0.26)';ctx.beginPath();ctx.ellipse(cx,cy+14,13,4,0,0,Math.PI*2);ctx.fill();
   const lg=Math.sin(ph)*5;
   ctx.fillStyle=co.det;ctx.fillRect(cx-8,cy+4+lg,6,13);ctx.fillRect(cx+2,cy+4-lg,6,13);
-  ctx.fillStyle='#2a1a0a';ctx.fillRect(cx-9,cy+15+lg,8,5);ctx.fillRect(cx+1,cy+15-lg,8,5);
+  ctx.fillStyle='#1a0a05';ctx.fillRect(cx-9,cy+15+lg,8,5);ctx.fillRect(cx+1,cy+15-lg,8,5);
   ctx.fillStyle=co.body;ctx.fillRect(cx-11,cy-8,22,14);
+  // Броня/детали на теле
   ctx.fillStyle=co.det;ctx.fillRect(cx-3,cy-6,6,2);ctx.fillRect(cx-3,cy-2,6,2);
+  ctx.fillStyle='rgba(0,0,0,0.15)';ctx.fillRect(cx-11,cy-8,22,4);
   const ag=Math.cos(ph)*4;
   ctx.fillStyle=co.body;ctx.fillRect(cx-16,cy-7+ag,5,12);ctx.fillRect(cx+11,cy-7-ag,5,12);
-  ctx.fillStyle=co.head;ctx.beginPath();ctx.arc(cx-13,cy+5+ag,3.5,0,Math.PI*2);ctx.arc(cx+13,cy+5-ag,3.5,0,Math.PI*2);ctx.fill();
-  // Оружие
-  ctx.fillStyle='#444';ctx.save();ctx.translate(cx+13,cy+5-ag);ctx.fillRect(0,-2,12,4);ctx.fillStyle='#666';ctx.fillRect(9,-3,4,3);ctx.restore();
+  ctx.fillStyle=co.det;
+  ctx.beginPath();ctx.arc(cx-13,cy+5+ag,3.5,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(cx+13,cy+5-ag,3.5,0,Math.PI*2);ctx.fill();
+  // Оружие в правой руке
+  ctx.fillStyle='#555';ctx.save();ctx.translate(cx+13,cy+5-ag);
+  ctx.fillRect(0,-2,14,4);ctx.fillStyle='#777';ctx.fillRect(11,-3,4,3);
+  ctx.fillStyle='#222';ctx.fillRect(2,-1,6,2);ctx.restore();
   ctx.fillStyle=co.head;ctx.fillRect(cx-4,cy-14,8,8);
   ctx.fillStyle=co.head;ctx.beginPath();ctx.arc(cx,cy-22,11,0,Math.PI*2);ctx.fill();
   ctx.fillStyle=co.helm;ctx.fillRect(cx-13,cy-34,26,14);
   ctx.fillStyle='rgba(255,255,255,0.09)';ctx.fillRect(cx-10,cy-33,12,4);
+  // Визор шлема
+  ctx.fillStyle='rgba(100,200,255,0.15)';ctx.fillRect(cx-10,cy-28,20,6);
   ctx.fillStyle='#fff';ctx.fillRect(cx-9,cy-24,6,6);ctx.fillRect(cx+3,cy-24,6,6);
-  ctx.fillStyle='#0a0a0a';ctx.fillRect(cx-8,cy-23,4,4);ctx.fillRect(cx+4,cy-23,4,4);
-  ctx.fillStyle='rgba(255,255,255,0.5)';ctx.fillRect(cx-8,cy-23,1.5,1.5);ctx.fillRect(cx+4,cy-23,1.5,1.5);
-  // Метка игрока
+  ctx.fillStyle='#0a0a22';ctx.fillRect(cx-8,cy-23,4,4);ctx.fillRect(cx+4,cy-23,4,4);
+  ctx.fillStyle='rgba(255,255,255,0.55)';ctx.fillRect(cx-8,cy-23,1.5,1.5);ctx.fillRect(cx+4,cy-23,1.5,1.5);
+  // Имя игрока
+  const nm=p.name||('П'+p.id);
   ctx.fillStyle=p.color;ctx.font='bold 9px sans-serif';ctx.textAlign='center';
-  ctx.shadowBlur=5;ctx.shadowColor=p.color;ctx.fillText('П'+p.id,cx,cy-37);ctx.shadowBlur=0;
+  ctx.shadowBlur=5;ctx.shadowColor=p.color;ctx.fillText(nm,cx,cy-37);ctx.shadowBlur=0;
   if(p.reloading){ctx.fillStyle='#fff';ctx.font='bold 11px sans-serif';ctx.fillText('⟳',cx,cy-44);}
   if(p.frozen>0){ctx.fillStyle='rgba(100,200,255,0.26)';ctx.beginPath();ctx.arc(cx,cy-8,22,0,Math.PI*2);ctx.fill();ctx.font='10px sans-serif';ctx.fillText('❄',cx,cy-18);}
-  // Что несём
   if(p.carryAmmo>0||p.carryMed>0){
     ctx.font='9px sans-serif';ctx.textAlign='center';
     const txt=(p.carryAmmo>0?'🔫':'')+(p.carryMed>0?'💊':'');
@@ -1437,7 +1506,9 @@ function drawZombie(z){
   else if(z.type==='freezer'){bC='#1a4080';hC='#122e60';eC='#88ffff';dC='#4488cc';}
   else if(z.type==='spitter'){bC='#1a5010';hC='#0e3508';eC='#88ff44';dC='#33bb22';}
   else{bC='#2e5c10';hC='#1e3e08';eC='#ff3300';dC='#4a9020';}
-  const sc=z.type==='boss'?1.5:1;
+
+  // Босс рисуется крупнее через scale, но физический размер меньше (BOSS_SIZE)
+  const sc=z.type==='boss'?1.4:1;
   ctx.save();
   if(sc!==1){ctx.translate(cx,cy);ctx.scale(sc,sc);ctx.translate(-cx,-cy);}
   ctx.fillStyle='rgba(0,0,0,0.34)';ctx.beginPath();ctx.ellipse(cx,cy+(z.size/2+4)/sc,z.size/sc*0.5,5/sc,0,0,Math.PI*2);ctx.fill();
@@ -1449,20 +1520,26 @@ function drawZombie(z){
   const ag=Math.sin(ph+0.5)*5;
   ctx.fillStyle=bC;ctx.fillRect(cx-17,cy-8+ag,7,14);ctx.fillRect(cx+10,cy-8-ag,7,14);
   ctx.fillStyle=hC;
+  // Когти
   for(let fi=0;fi<3;fi++){ctx.beginPath();ctx.arc(cx-13+fi*2,cy+6+ag+fi,2.2,0,Math.PI*2);ctx.arc(cx+14-fi*2,cy+6-ag+fi,2.2,0,Math.PI*2);ctx.fill();}
   ctx.fillStyle=hC;ctx.fillRect(cx-11,cy-8,8,4);ctx.fillRect(cx+3,cy-8,8,4);
   ctx.fillStyle=hC;ctx.beginPath();ctx.arc(cx,cy-20,11,0,Math.PI*2);ctx.fill();
+  // Шрамы
   ctx.strokeStyle='rgba(180,0,0,0.33)';ctx.lineWidth=1.5;
   ctx.beginPath();ctx.moveTo(cx-4,cy-26);ctx.lineTo(cx-2,cy-18);ctx.stroke();
   ctx.beginPath();ctx.moveTo(cx+5,cy-22);ctx.lineTo(cx+3,cy-16);ctx.stroke();
+  // Глаза
   ctx.shadowBlur=9;ctx.shadowColor=eC;ctx.fillStyle=eC;
   ctx.beginPath();ctx.arc(cx-4,cy-21,3.5,0,Math.PI*2);ctx.arc(cx+4,cy-21,3.5,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
   ctx.fillStyle='#000';ctx.beginPath();ctx.arc(cx-4,cy-21,1.5,0,Math.PI*2);ctx.arc(cx+4,cy-21,1.5,0,Math.PI*2);ctx.fill();
+  // Рот (оскал)
   ctx.strokeStyle='rgba(200,40,40,0.65)';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(cx,cy-13,5.5,0.1*Math.PI,0.9*Math.PI);ctx.stroke();
+  // Корона босса
   if(z.type==='boss'){ctx.fillStyle='#cc8800';for(let bi=0;bi<5;bi++){const bx=cx-10+bi*5,by2=cy-31;ctx.fillRect(bx,by2-4-(bi%2)*5,3,8+(bi%2)*5);}}
   if(z.type==='leaper'&&z.leaping){ctx.fillStyle='rgba(255,140,0,0.24)';ctx.beginPath();ctx.arc(cx,cy,18,0,Math.PI*2);ctx.fill();}
   if(z.type==='freezer'){ctx.strokeStyle='rgba(140,210,255,0.38)';ctx.lineWidth=1;for(let ii=0;ii<4;ii++){const ang=ii*Math.PI/2+tick*0.04;ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+Math.cos(ang)*22,cy+Math.sin(ang)*22);ctx.stroke();}}
   ctx.restore();
+  // HP bar
   if(z.hp<z.maxHp){
     const bw=z.size+6,bh=5,bx=z.x-3,by=z.y-22;
     ctx.fillStyle='rgba(0,0,0,0.65)';ctx.fillRect(bx,by,bw,bh);
@@ -1473,34 +1550,57 @@ function drawZombie(z){
   }
 }
 
-// ===== DRAW BARREL =====
-function drawBarrel(bar){
-  const x=bar.x, y=bar.y;
-  const hr=Math.max(0,bar.hp/bar.maxHp);
+// ===== DRAW MINE (красивая) =====
+function drawMine(m){
+  const x=m.x,y=m.y;
+  const al=0.6+Math.sin(Date.now()/200)*0.4;
+  const t=Date.now()/1000;
   ctx.save();
   // Тень
+  ctx.fillStyle='rgba(0,0,0,0.3)';ctx.beginPath();ctx.ellipse(x,y+4,12,4,0,0,Math.PI*2);ctx.fill();
+  // Корпус мины - металлический диск
+  ctx.fillStyle='#3a3a3a';
+  ctx.beginPath();ctx.ellipse(x,y-2,12,8,0,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#555';
+  ctx.beginPath();ctx.ellipse(x,y-4,11,7,0,0,Math.PI*2);ctx.fill();
+  // Мигающий огонёк
+  ctx.fillStyle='rgba(255,80,0,'+al+')';
+  ctx.shadowBlur=10;ctx.shadowColor='#f80';
+  ctx.beginPath();ctx.arc(x,y-4,4,0,Math.PI*2);ctx.fill();
+  ctx.shadowBlur=0;
+  // Антенна
+  ctx.strokeStyle='#888';ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(x+4,y-6);ctx.lineTo(x+7,y-13);ctx.stroke();
+  ctx.fillStyle='#ff4400';ctx.beginPath();ctx.arc(x+7,y-13,2,0,Math.PI*2);ctx.fill();
+  // Болтики
+  for(let i=0;i<4;i++){
+    const ang=i*Math.PI/2+0.3;
+    ctx.fillStyle='#888';ctx.beginPath();ctx.arc(x+Math.cos(ang)*9,y-4+Math.sin(ang)*5,1.5,0,Math.PI*2);ctx.fill();
+  }
+  // Кольцо пульсации
+  ctx.strokeStyle='rgba(255,136,0,'+al*0.5+')';ctx.lineWidth=1;
+  ctx.beginPath();ctx.arc(x,y-4,14+Math.sin(t*5)*2,0,Math.PI*2);ctx.stroke();
+  ctx.restore();
+}
+
+// ===== DRAW BARREL =====
+function drawBarrel(bar){
+  const x=bar.x,y=bar.y;
+  const hr=Math.max(0,bar.hp/bar.maxHp);
+  ctx.save();
   ctx.fillStyle='rgba(0,0,0,0.32)';ctx.beginPath();ctx.ellipse(x,y+BARREL_R+2,BARREL_R*0.9,BARREL_R*0.3,0,0,Math.PI*2);ctx.fill();
-  // Корпус бочки
   ctx.fillStyle=hr>0.5?'#8b4a1a':'#7a3a14';
   ctx.beginPath();ctx.ellipse(x,y,BARREL_R,BARREL_R*0.45,0,0,Math.PI*2);ctx.fill();
   ctx.fillStyle=hr>0.5?'#a05820':'#8a4418';
   ctx.fillRect(x-BARREL_R,y,BARREL_R*2,BARREL_R*1.6);
   ctx.fillStyle=hr>0.5?'#8b4a1a':'#7a3a14';
   ctx.beginPath();ctx.ellipse(x,y+BARREL_R*1.6,BARREL_R,BARREL_R*0.45,0,0,Math.PI*2);ctx.fill();
-  // Обручи
   ctx.strokeStyle='#444';ctx.lineWidth=3;
   ctx.beginPath();ctx.ellipse(x,y+BARREL_R*0.4,BARREL_R,BARREL_R*0.3,0,0,Math.PI*2);ctx.stroke();
   ctx.beginPath();ctx.ellipse(x,y+BARREL_R*1.2,BARREL_R,BARREL_R*0.3,0,0,Math.PI*2);ctx.stroke();
-  // Надпись
   ctx.fillStyle='rgba(255,220,100,0.9)';ctx.font='bold 10px sans-serif';ctx.textAlign='center';
   ctx.fillText('🛢',x,y+BARREL_R*0.9);
-  // Трещины при повреждении
-  if(hr<0.5){
-    ctx.strokeStyle='rgba(0,0,0,0.5)';ctx.lineWidth=1.5;
-    ctx.beginPath();ctx.moveTo(x-6,y+4);ctx.lineTo(x-2,y+14);ctx.stroke();
-    ctx.beginPath();ctx.moveTo(x+8,y+8);ctx.lineTo(x+6,y+18);ctx.stroke();
-  }
-  // HP бар
+  if(hr<0.5){ctx.strokeStyle='rgba(0,0,0,0.5)';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(x-6,y+4);ctx.lineTo(x-2,y+14);ctx.stroke();ctx.beginPath();ctx.moveTo(x+8,y+8);ctx.lineTo(x+6,y+18);ctx.stroke();}
   const bw=BARREL_R*2+4;
   ctx.fillStyle='rgba(0,0,0,0.6)';ctx.fillRect(x-BARREL_R-2,y-BARREL_R*0.6-8,bw,5);
   ctx.fillStyle=hr>0.5?'#5fe56e':'#ff7240';ctx.fillRect(x-BARREL_R-2,y-BARREL_R*0.6-8,bw*hr,5);
@@ -1517,7 +1617,6 @@ function renderWorld(vp){
 
   if(floorCache)ctx.drawImage(floorCache,0,0);
 
-  // Очередь рендера
   const rq=[];
   rq.push({type:'base',sy:base.y+base.size});
   droppedCoins.forEach(c=>rq.push({type:'coin',sy:c.y,o:c}));
@@ -1563,15 +1662,7 @@ function renderWorld(vp){
       ctx.fillStyle='#ff2f2f';ctx.fillRect(m.x-4,m.y-8+bob,8,16);ctx.fillRect(m.x-9,m.y-3+bob,18,7);
       ctx.shadowBlur=0;
     }
-    else if(item.type==='mine'){
-      const m=item.o;const al=0.6+Math.sin(Date.now()/200)*0.4;
-      ctx.fillStyle='rgba(0,0,0,0.18)';ctx.beginPath();ctx.ellipse(m.x,m.y+4,10,4,0,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle='rgba(255,136,0,'+al+')';ctx.shadowBlur=10;ctx.shadowColor='#f80';
-      ctx.beginPath();ctx.arc(m.x,m.y-5,10,0,Math.PI*2);ctx.fill();
-      ctx.strokeStyle='#fff';ctx.lineWidth=2;
-      ctx.beginPath();ctx.moveTo(m.x-6,m.y-5);ctx.lineTo(m.x+6,m.y-5);ctx.stroke();
-      ctx.beginPath();ctx.moveTo(m.x,m.y-11);ctx.lineTo(m.x,m.y+1);ctx.stroke();ctx.shadowBlur=0;
-    }
+    else if(item.type==='mine'){drawMine(item.o);}
     else if(item.type==='barrel'){drawBarrel(item.o);}
     else if(item.type==='poison'){
       const p=item.o;const al=p.timer/180;
@@ -1593,10 +1684,10 @@ function renderWorld(vp){
   for(const dn of dmgNums){
     const t=dn.life/dn.max;
     ctx.globalAlpha=t;ctx.shadowBlur=dn.crit?12:5;
-    if(dn.isPlayer){ctx.font='bold 12px sans-serif';ctx.shadowColor='#ff4400';ctx.fillStyle='#ffaa55';}
-    else if(dn.crit){ctx.font='bold 16px sans-serif';ctx.shadowColor='#ff8800';ctx.fillStyle='#ffbb00';}
+    if(dn.isPlayer){ctx.font='bold 13px sans-serif';ctx.shadowColor='#ff4400';ctx.fillStyle='#ffaa55';}
+    else if(dn.crit){ctx.font='bold 17px sans-serif';ctx.shadowColor='#ff8800';ctx.fillStyle='#ffcc00';}
     else{ctx.font='bold 12px sans-serif';ctx.shadowColor='#ff2222';ctx.fillStyle='#ff6666';}
-    ctx.fillText((dn.isPlayer?'-':dn.crit?'💥 ':'-')+dn.val,dn.x,dn.y);
+    ctx.fillText((dn.isPlayer?'-':dn.crit?'💥':'-')+dn.val,dn.x,dn.y);
     ctx.shadowBlur=0;ctx.globalAlpha=1;
   }
 
@@ -1605,25 +1696,25 @@ function renderWorld(vp){
     const bsx=(base.x-camX)*zoom+w/2,bsy=(base.y-camY)*zoom+h/2;
     if(bsx<-10||bsx>w+10||bsy<-10||bsy>h+10){
       const ang=Math.atan2(bsy-h/2,bsx-w/2);
-      const margin=40;
+      const margin=44;
       const edgeX=clamp(w/2+Math.cos(ang)*(Math.min(w,h)/2-margin),margin,w-margin);
       const edgeY=clamp(h/2+Math.sin(ang)*(Math.min(w,h)/2-margin),margin,h-margin);
       ctx.restore();ctx.save();ctx.beginPath();ctx.rect(x,y,w,h);ctx.clip();
       ctx.save();ctx.translate(x+edgeX,y+edgeY);ctx.rotate(ang);
-      ctx.fillStyle='rgba(255,215,0,0.9)';
-      ctx.beginPath();ctx.moveTo(18,0);ctx.lineTo(-8,10);ctx.lineTo(-8,-10);ctx.closePath();ctx.fill();
+      ctx.fillStyle='rgba(255,215,0,0.92)';
+      ctx.beginPath();ctx.moveTo(20,0);ctx.lineTo(-9,11);ctx.lineTo(-9,-11);ctx.closePath();ctx.fill();
       ctx.strokeStyle='rgba(0,0,0,0.6)';ctx.lineWidth=1.5;ctx.stroke();
       ctx.restore();
       ctx.fillStyle='rgba(255,215,0,0.9)';ctx.font='bold 9px sans-serif';ctx.textAlign='center';
-      ctx.fillText('🏠',x+edgeX,y+edgeY+19);
+      ctx.fillText('🏠',x+edgeX,y+edgeY+20);
       ctx.restore();return;
     }
   }
 
-  // Туман
+  // Туман по краям
   const mp=MAPSZ*TILE;
   const fog=ctx.createRadialGradient(mp/2,mp/2,mp*0.28,mp/2,mp/2,mp*0.7);
-  fog.addColorStop(0,'rgba(0,0,0,0)');fog.addColorStop(1,'rgba(0,0,0,0.56)');
+  fog.addColorStop(0,'rgba(0,0,0,0)');fog.addColorStop(1,'rgba(0,0,0,0.58)');
   ctx.fillStyle=fog;ctx.fillRect(0,0,mp,mp);
   ctx.restore();
 }
@@ -1664,6 +1755,7 @@ window.addEventListener('resize',resizeCanvas);
 resizeCanvas();
 draw();
 setInterval(update,1000/60);
+
 </script>
 </body>
 </html>
