@@ -1,3 +1,93 @@
+let mqttClient = null;
+let roomID = "";
+let playerRole = ""; 
+let myIdx = 0; 
+let isConnected = false; 
+let ping = 0;
+
+window.startMultiplayer = function(role) {
+    const nameInput = document.getElementById('room-name');
+    if (!nameInput || !nameInput.value) return alert("Введите код комнаты!");
+    
+    roomID = nameInput.value.trim();
+    playerRole = role;
+    myIdx = (role === 'host') ? 0 : 1;
+    currentPlayers = 1; 
+
+    const statusEl = document.getElementById('net-status');
+    statusEl.innerText = "Подключение...";
+
+    mqttClient = new Paho.MQTT.Client("broker.emqx.io", 8084, "p_" + Math.random().toString(16).slice(2));
+
+    mqttClient.onMessageArrived = (msg) => {
+        try {
+            const data = JSON.parse(msg.payloadString);
+            
+            // ПРОВЕРКА СОЕДИНЕНИЯ
+            if (data.type === 'HELO' && playerRole === 'host') {
+                sendNetData({ type: 'WELCOME' }); // Отвечаем клиенту
+                isConnected = true;
+                statusEl.innerText = "Игрок подключился!";
+                setTimeout(() => document.getElementById('ui-menu').classList.add('hidden'), 500);
+            }
+            if (data.type === 'WELCOME' && playerRole === 'client') {
+                isConnected = true; // Теперь мы знаем, что хост есть
+                statusEl.innerText = "Связь установлена!";
+                setTimeout(() => document.getElementById('ui-menu').classList.add('hidden'), 500);
+            }
+
+            if (data.ts) ping = Date.now() - data.ts;
+
+            if (data.type === 'POS' && isConnected) {
+                let otherIdx = (myIdx === 0) ? 1 : 0;
+                if (players[otherIdx]) {
+                    players[otherIdx].x = data.x;
+                    players[otherIdx].y = data.y;
+                    players[otherIdx].angle = data.angle;
+                    players[otherIdx].hp = data.hp;
+                }
+            }
+        } catch(e) {}
+    };
+
+    mqttClient.connect({
+        useSSL: true,
+        onSuccess: () => {
+            statusEl.innerText = (role === 'host') ? "Ждем игрока..." : "Ищем хост...";
+            const subTopic = (myIdx === 0) ? `zombs/${roomID}/client` : `zombs/${roomID}/host`;
+            mqttClient.subscribe(subTopic);
+            
+            if (role === 'client') {
+                // Пытаемся найти хоста раз в секунду
+                const handshakeInt = setInterval(() => {
+                    if (isConnected) clearInterval(handshakeInt);
+                    else sendNetData({ type: 'HELO' });
+                }, 1000);
+            }
+            
+            initGame(2); 
+            syncPosLoop();
+        }
+    });
+};
+
+function sendNetData(obj) {
+    if (mqttClient && mqttClient.isConnected()) {
+        obj.ts = Date.now();
+        const pubTopic = (myIdx === 0) ? `zombs/${roomID}/host` : `zombs/${roomID}/client`;
+        const message = new Paho.MQTT.Message(JSON.stringify(obj));
+        message.destinationName = pubTopic;
+        mqttClient.send(message);
+    }
+}
+
+function syncPosLoop() {
+    if (isConnected && players[myIdx]) {
+        sendNetData({ type: 'POS', x: players[myIdx].x, y: players[myIdx].y, angle: players[myIdx].angle, hp: players[myIdx].hp });
+    }
+    requestAnimationFrame(syncPosLoop);
+}
+
 const canvas = document.getElementById('gc');
 const ctx = canvas.getContext('2d');
 
@@ -1382,40 +1472,33 @@ function update(){
  }
  for(const p of players){if(p.frozen>0){p.frozen--;p.slow=0.6;}else p.slow=1;}
  // Движение игроков
- // Внутри функции update()
-const p = players[myIdx]; // Управляем только собой
+const p = players[myIdx]; // Теперь берем только СВОЕГО игрока
 if (p && p.hp > 0) {
     const spd = p.spd * p.slow;
     let moved = false;
     let nx = p.x, ny = p.y;
 
-    // Читаем клавиши только для нашего игрока
     if (keys[p.controls.up]) { ny -= spd; moved = true; }
     if (keys[p.controls.down]) { ny += spd; moved = true; }
-    if (!colCheck(p.x, ny, p.size)) p.y = clamp(ny, 0, MAPSZ * TILE - p.size);
+    if (!colCheck(p.x, ny, p.size)) p.y = Math.max(0, Math.min(ny, MAPSZ * TILE - p.size));
 
     if (keys[p.controls.left]) { nx -= spd; moved = true; }
     if (keys[p.controls.right]) { nx += spd; moved = true; }
-    if (!colCheck(nx, p.y, p.size)) p.x = clamp(nx, 0, MAPSZ * TILE - p.size);
+    if (!colCheck(nx, p.y, p.size)) p.x = Math.max(0, Math.min(nx, MAPSZ * TILE - p.size));
     
     if (moved) p.walk = (p.walk || 0) + 0.2;
 
-    // Поворот (за мышкой)
     const screenX = p.x - cam.x + (canvas.width / 2);
     const screenY = p.y - cam.y + (canvas.height / 2);
     p.angle = Math.atan2(mouseY - screenY, mouseX - screenX);
-
-    // Стрельба
-    const doShoot = keys[p.controls.shoot] || (mDown && myIdx === 0);
-    if (doShoot) {
-        let target = null, minD = Infinity;
-        for (const z of zombies) {
-            const d = Math.hypot((p.x + p.size/2) - (z.x + z.size/2), (p.y + p.size/2) - (z.y + z.size/2));
-            if (d < minD && d < 580) { minD = d; target = z; }
-        }
-        if (target) shoot(p, target.x + target.size/2, target.y + target.size/2);
-    }
 }
+ if(doShoot){
+ let target=null,minD=Infinity;
+ for(const z of zombies){const d=Math.hypot((p.x+p.size/2)-(z.x+z.size/2),(p.y+p.size/2)-(z.y+z.size/2));if(d<minD&&d<580){minD=d;target=z;}}
+ if(target)shoot(p,target.x+target.size/2,target.y+target.size/2);
+ else shoot(p,p.x+90,p.y);
+ }
+ }
  // Камера
  const lv=getLiving();
  if(lv.length>0){
