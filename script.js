@@ -5,89 +5,6 @@ let myIdx = 0;
 let isConnected = false; 
 let ping = 0;
 
-window.startMultiplayer = function(role) {
-    const nameInput = document.getElementById('room-name');
-    if (!nameInput || !nameInput.value) return alert("Введите код комнаты!");
-    
-    roomID = nameInput.value.trim();
-    playerRole = role;
-    myIdx = (role === 'host') ? 0 : 1;
-    currentPlayers = 1; 
-
-    const statusEl = document.getElementById('net-status');
-    statusEl.innerText = "Подключение...";
-
-    mqttClient = new Paho.MQTT.Client("broker.emqx.io", 8084, "p_" + Math.random().toString(16).slice(2));
-
-    mqttClient.onMessageArrived = (msg) => {
-        try {
-            const data = JSON.parse(msg.payloadString);
-            
-            // ПРОВЕРКА СОЕДИНЕНИЯ
-            if (data.type === 'HELO' && playerRole === 'host') {
-                sendNetData({ type: 'WELCOME' }); // Отвечаем клиенту
-                isConnected = true;
-                statusEl.innerText = "Игрок подключился!";
-                setTimeout(() => document.getElementById('ui-menu').classList.add('hidden'), 500);
-            }
-            if (data.type === 'WELCOME' && playerRole === 'client') {
-                isConnected = true; // Теперь мы знаем, что хост есть
-                statusEl.innerText = "Связь установлена!";
-                setTimeout(() => document.getElementById('ui-menu').classList.add('hidden'), 500);
-            }
-
-            if (data.ts) ping = Date.now() - data.ts;
-
-            if (data.type === 'POS' && isConnected) {
-                let otherIdx = (myIdx === 0) ? 1 : 0;
-                if (players[otherIdx]) {
-                    players[otherIdx].x = data.x;
-                    players[otherIdx].y = data.y;
-                    players[otherIdx].angle = data.angle;
-                    players[otherIdx].hp = data.hp;
-                }
-            }
-        } catch(e) {}
-    };
-
-    mqttClient.connect({
-        useSSL: true,
-        onSuccess: () => {
-            statusEl.innerText = (role === 'host') ? "Ждем игрока..." : "Ищем хост...";
-            const subTopic = (myIdx === 0) ? `zombs/${roomID}/client` : `zombs/${roomID}/host`;
-            mqttClient.subscribe(subTopic);
-            
-            if (role === 'client') {
-                // Пытаемся найти хоста раз в секунду
-                const handshakeInt = setInterval(() => {
-                    if (isConnected) clearInterval(handshakeInt);
-                    else sendNetData({ type: 'HELO' });
-                }, 1000);
-            }
-            
-            initGame(2); 
-            syncPosLoop();
-        }
-    });
-};
-
-function sendNetData(obj) {
-    if (mqttClient && mqttClient.isConnected()) {
-        obj.ts = Date.now();
-        const pubTopic = (myIdx === 0) ? `zombs/${roomID}/host` : `zombs/${roomID}/client`;
-        const message = new Paho.MQTT.Message(JSON.stringify(obj));
-        message.destinationName = pubTopic;
-        mqttClient.send(message);
-    }
-}
-
-function syncPosLoop() {
-    if (isConnected && players[myIdx]) {
-        sendNetData({ type: 'POS', x: players[myIdx].x, y: players[myIdx].y, angle: players[myIdx].angle, hp: players[myIdx].hp });
-    }
-    requestAnimationFrame(syncPosLoop);
-}
-
 const canvas = document.getElementById('gc');
 const ctx = canvas.getContext('2d');
 
@@ -2139,6 +2056,88 @@ function syncPosLoop() {
     if (isConnected && players[myIdx]) {
         const p = players[myIdx];
         sendNetData({ type: 'POS', x: p.x, y: p.y, angle: p.angle, hp: p.hp });
+    }
+    requestAnimationFrame(syncPosLoop);
+}
+window.startMultiplayer = function(role) {
+    const nameInput = document.getElementById('room-name');
+    if (!nameInput || !nameInput.value) return alert("Введите код комнаты!");
+    
+    roomID = nameInput.value.trim();
+    playerRole = role;
+    myIdx = (role === 'host') ? 0 : 1;
+    currentPlayers = 1; 
+
+    const statusEl = document.getElementById('net-status');
+    statusEl.innerText = "Подключение...";
+
+    mqttClient = new Paho.MQTT.Client("broker.emqx.io", 8084, "p_" + Math.random().toString(16).slice(2));
+
+    mqttClient.onMessageArrived = (msg) => {
+        try {
+            const data = JSON.parse(msg.payloadString);
+            
+            // ПРОВЕРКА СОЕДИНЕНИЯ
+            if (data.type === 'HELO' && playerRole === 'host') {
+                sendNetData({ type: 'WELCOME' }); // Отвечаем клиенту
+                isConnected = true;
+                statusEl.innerText = "Игрок подключился!";
+                setTimeout(() => document.getElementById('ui-menu').classList.add('hidden'), 500);
+            }
+            if (data.type === 'WELCOME' && playerRole === 'client') {
+                isConnected = true; // Теперь мы знаем, что хост есть
+                statusEl.innerText = "Связь установлена!";
+                setTimeout(() => document.getElementById('ui-menu').classList.add('hidden'), 500);
+            }
+
+            if (data.ts) ping = Date.now() - data.ts;
+
+            if (data.type === 'POS' && isConnected) {
+                let otherIdx = (myIdx === 0) ? 1 : 0;
+                if (players[otherIdx]) {
+                    players[otherIdx].x = data.x;
+                    players[otherIdx].y = data.y;
+                    players[otherIdx].angle = data.angle;
+                    players[otherIdx].hp = data.hp;
+                }
+            }
+        } catch(e) {}
+    };
+
+    mqttClient.connect({
+        useSSL: true,
+        onSuccess: () => {
+            statusEl.innerText = (role === 'host') ? "Ждем игрока..." : "Ищем хост...";
+            const subTopic = (myIdx === 0) ? `zombs/${roomID}/client` : `zombs/${roomID}/host`;
+            mqttClient.subscribe(subTopic);
+            
+            if (role === 'client') {
+                // Пытаемся найти хоста раз в секунду
+                const handshakeInt = setInterval(() => {
+                    if (isConnected) clearInterval(handshakeInt);
+                    else sendNetData({ type: 'HELO' });
+                }, 1000);
+            }
+            
+            initGame(2); 
+            syncPosLoop();
+        }
+    });
+};
+
+function sendNetData(obj) {
+    if (mqttClient && mqttClient.isConnected()) {
+        obj.ts = Date.now();
+        const pubTopic = (myIdx === 0) ? `zombs/${roomID}/host` : `zombs/${roomID}/client`;
+        const message = new Paho.MQTT.Message(JSON.stringify(obj));
+        message.destinationName = pubTopic;
+        mqttClient.send(message);
+    }
+}
+
+function syncPosLoop() {
+    if (isConnected && players[myIdx]) {
+        sendNetData({ type: 'POS', x: players[myIdx].x, y: players[myIdx].y, angle: players[myIdx].angle, hp: players[myIdx].hp });
     }
     requestAnimationFrame(syncPosLoop);
 }
