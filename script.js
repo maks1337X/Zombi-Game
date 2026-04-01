@@ -1,43 +1,53 @@
-// Используем альтернативные настройки, чтобы обойти блокировку 403
-const peer = new Peer(Math.random().toString(36).substr(2, 9), {
-    host: 'peerjs-server.herokuapp.com', // Пробуем альтернативный хост
-    secure: true,
-    port: 443,
-    config: {
-        'iceServers': [
-            { urls: 'stun:stun.l.google.com:19302' },
-            { urls: 'stun:stun1.l.google.com:19302' }
-        ]
-    }
-});
-
-// Добавляем отлов ошибок, чтобы в консоли было понятно, что происходит
-peer.on('error', (err) => {
-    console.error('Сетевая ошибка:', err.type);
-    document.getElementById('mp-my-id').innerText = "Ошибка сети: " + err.type;
-});
+// 1. Создаем объект Peer без указания ID и хоста (пусть использует облако по умолчанию)
+const peer = new Peer(); 
 
 let conn = null;
 let isHost = false;
 
-// 1. Получаем свой ID и выводим его
+// Сообщения для отладки прямо на экран
+const mpStatus = document.getElementById('mp-my-id');
+
+// Когда сервер PeerJS успешно выдал нам ID
 peer.on('open', (id) => {
-    document.getElementById('mp-my-id').innerText = "Ваш ID (скинь другу): " + id;
+    console.log('Мой ID:', id);
+    mpStatus.innerText = "Ваш ID: " + id + " (скопируй и дай другу)";
+    mpStatus.style.color = "#88ff88"; // Зеленый — всё ок
 });
 
-// 2. Обработка входящего подключения (Ты — ХОСТ)
+// Если произошла ошибка
+peer.on('error', (err) => {
+    console.error('Ошибка PeerJS:', err.type);
+    mpStatus.style.color = "#ff5555"; // Красный — ошибка
+    
+    if (err.type === 'server-error') {
+        mpStatus.innerText = "Ошибка: Сервер перегружен. Подожди 5 сек и обнови (F5).";
+    } else if (err.type === 'network') {
+        mpStatus.innerText = "Ошибка сети. Проверь интернет.";
+    } else {
+        mpStatus.innerText = "Ошибка: " + err.type;
+    }
+});
+
+// Когда К НАМ кто-то подключается (Мы — Хост)
 peer.on('connection', (connection) => {
     conn = connection;
     isHost = true;
     setupNetworkEvents();
-    alert("Игрок 2 подключился!");
-    initGame(2); // Запускаем режим на двоих
+    console.log("Игрок 2 подключился!");
+    
+    // Закрываем меню и запускаем игру на двоих
+    if (gState === 'MENU') {
+        initGame(2);
+        document.getElementById('ui-menu').classList.add('hidden');
+    }
 });
 
-// 3. Функция для подключения (Ты — КЛИЕНТ)
+// Функция для подключения К ДРУГУ (Мы — Клиент)
 function connectAsClient() {
-    const targetId = document.getElementById('peer-id-input').value;
-    if (!targetId) return alert("Введите ID хоста");
+    const targetId = document.getElementById('peer-id-input').value.trim();
+    if (!targetId) return alert("Сначала вставь ID друга!");
+    
+    mpStatus.innerText = "Подключение к " + targetId + "...";
     
     conn = peer.connect(targetId);
     isHost = false;
@@ -46,48 +56,24 @@ function connectAsClient() {
 
 function setupNetworkEvents() {
     conn.on('open', () => {
+        mpStatus.innerText = "СВЯЗЬ УСТАНОВЛЕНА!";
+        mpStatus.style.color = "#00ffff";
+        
         if (!isHost) {
-            alert("Вы подключились к хосту!");
             initGame(2);
+            document.getElementById('ui-menu').classList.add('hidden');
         }
         
-        // Прием данных
         conn.on('data', (data) => {
             handleNetworkData(data);
         });
     });
-}
 
-// Обработка полученных пакетов
-function handleNetworkData(data) {
-    if (data.type === 'move') {
-        // Если мы хост, обновляем позицию Игрока 2. Если клиент — Игрока 1.
-        let remotePlayerIdx = isHost ? 1 : 0;
-        if (players[remotePlayerIdx]) {
-            players[remotePlayerIdx].x = data.x;
-            players[remotePlayerIdx].y = data.y;
-            players[remotePlayerIdx].angle = data.angle;
-        }
-    }
+    conn.on('close', () => {
+        alert("Связь разорвана!");
+        location.reload();
+    });
 }
-
-// Функция отправки (вызывать в gameLoop)
-function broadcastMyPosition() {
-    if (conn && conn.open) {
-        let myIdx = isHost ? 0 : 1;
-        if (players[myIdx]) {
-            conn.send({
-                type: 'move',
-                x: players[myIdx].x,
-                y: players[myIdx].y,
-                angle: players[myIdx].angle
-            });
-        }
-    }
-}
-
-const canvas = document.getElementById('gc');
-const ctx = canvas.getContext('2d');
 
 // ===== CONSTANTS =====
 const TILE = 64;
