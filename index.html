@@ -5,16 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Лесное Месиво — Зомби Кооператив</title>
     <link rel="stylesheet" href="style.css">
-    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
 </head>
 <body>
-   <div id="mp-ui" style="position:fixed; top:5px; left:50%; transform:translateX(-50%); z-index:9999; background:rgba(0,0,0,0.85); padding:10px; border:1px solid #468c23; border-radius:8px; color:white; font-family:sans-serif; font-size:12px; width:300px; text-align:center;">
-    <div id="mp-my-id" style="font-weight:bold; color:#f0f0f0;">Загрузка ID...</div>
-    <div style="margin-top:8px; display:flex; gap:5px;">
-        <input type="text" id="peer-id-input" placeholder="ID друга" style="flex:1; background:#222; color:#fff; border:1px solid #444; padding:4px;">
-        <button onclick="connectAsClient()" style="background:#468c23; border:none; color:white; padding:4px 10px; cursor:pointer; border-radius:4px;">Войти</button>
+    
+<div id="mp-ui" style="position:fixed; top:10px; left:50%; transform:translateX(-50%); z-index:1000; background:rgba(0,0,0,0.9); padding:15px; border:2px solid #468c23; border-radius:12px; color:white; font-family:sans-serif; width:320px; text-align:center;">
+    <div style="font-weight:bold; margin-bottom:10px; color:#88ff88;">🌐 СЕТЕВАЯ ИГРА (БЕЗ VPN)</div>
+    <input type="text" id="room-name" placeholder="Название комнаты (любое)" style="width:100%; background:#111; color:#fff; border:1px solid #444; padding:8px; margin-bottom:10px; border-radius:5px;">
+    
+    <div style="display:flex; gap:10px;">
+        <button onclick="startMultiplayer('host')" style="flex:1; background:#468c23; border:none; color:white; padding:10px; cursor:pointer; border-radius:5px; font-weight:bold;">СОЗДАТЬ</button>
+        <button onclick="startMultiplayer('client')" style="flex:1; background:#2c5a17; border:none; color:white; padding:10px; cursor:pointer; border-radius:5px; font-weight:bold;">ВОЙТИ</button>
     </div>
-    <div style="font-size:10px; color:#aaa; margin-top:5px;">Если ID не грузится — обновите страницу через 10 сек.</div>
+    <div id="net-status" style="font-size:11px; margin-top:8px; color:#aaa;">Введите одинаковое имя с другом</div>
 </div>
     <div id="ui-menu" class="overlay">
  <div style="text-align:center;width:min(880px,calc(100vw - 12px));">
