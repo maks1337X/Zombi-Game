@@ -1,79 +1,101 @@
-// 1. Создаем объект Peer без указания ID и хоста (пусть использует облако по умолчанию)
-const peer = new Peer(); 
+// ===== ФИКС МУЛЬТИПЛЕЕРА =====
+(function() {
+    // Ждем, пока всё загрузится, чтобы не было ошибки "canvas is not defined"
+    window.addEventListener('load', () => {
+        initNetwork();
+    });
 
-let conn = null;
-let isHost = false;
+    let peer = null;
+    let conn = null;
+    let isHost = false;
 
-// Сообщения для отладки прямо на экран
-const mpStatus = document.getElementById('mp-my-id');
-
-// Когда сервер PeerJS успешно выдал нам ID
-peer.on('open', (id) => {
-    console.log('Мой ID:', id);
-    mpStatus.innerText = "Ваш ID: " + id + " (скопируй и дай другу)";
-    mpStatus.style.color = "#88ff88"; // Зеленый — всё ок
-});
-
-// Если произошла ошибка
-peer.on('error', (err) => {
-    console.error('Ошибка PeerJS:', err.type);
-    mpStatus.style.color = "#ff5555"; // Красный — ошибка
-    
-    if (err.type === 'server-error') {
-        mpStatus.innerText = "Ошибка: Сервер перегружен. Подожди 5 сек и обнови (F5).";
-    } else if (err.type === 'network') {
-        mpStatus.innerText = "Ошибка сети. Проверь интернет.";
-    } else {
-        mpStatus.innerText = "Ошибка: " + err.type;
-    }
-});
-
-// Когда К НАМ кто-то подключается (Мы — Хост)
-peer.on('connection', (connection) => {
-    conn = connection;
-    isHost = true;
-    setupNetworkEvents();
-    console.log("Игрок 2 подключился!");
-    
-    // Закрываем меню и запускаем игру на двоих
-    if (gState === 'MENU') {
-        initGame(2);
-        document.getElementById('ui-menu').classList.add('hidden');
-    }
-});
-
-// Функция для подключения К ДРУГУ (Мы — Клиент)
-function connectAsClient() {
-    const targetId = document.getElementById('peer-id-input').value.trim();
-    if (!targetId) return alert("Сначала вставь ID друга!");
-    
-    mpStatus.innerText = "Подключение к " + targetId + "...";
-    
-    conn = peer.connect(targetId);
-    isHost = false;
-    setupNetworkEvents();
-}
-
-function setupNetworkEvents() {
-    conn.on('open', () => {
-        mpStatus.innerText = "СВЯЗЬ УСТАНОВЛЕНА!";
-        mpStatus.style.color = "#00ffff";
+    function initNetwork() {
+        const mpStatus = document.getElementById('mp-my-id');
         
-        if (!isHost) {
-            initGame(2);
-            document.getElementById('ui-menu').classList.add('hidden');
+        // Попытка создать подключение с настройками для обхода блокировок
+        try {
+            peer = new Peer(undefined, {
+                debug: 2
+            });
+
+            peer.on('open', (id) => {
+                console.log('ID получен:', id);
+                if(mpStatus) {
+                    mpStatus.innerText = "Ваш ID: " + id;
+                    mpStatus.style.color = "#88ff88";
+                }
+            });
+
+            peer.on('error', (err) => {
+                console.error('Ошибка PeerJS:', err.type);
+                if(mpStatus) {
+                    mpStatus.innerText = "Ошибка: " + err.type;
+                    mpStatus.style.color = "#ff5555";
+                }
+            });
+
+            // Обработка входящего подключения (Мы - ХОСТ)
+            peer.on('connection', (connection) => {
+                conn = connection;
+                isHost = true;
+                setupNetworkEvents();
+                alert("Игрок 2 подключился!");
+                if (typeof initGame === "function") initGame(2);
+            });
+        } catch (e) {
+            console.error("Критическая ошибка инициализации сети:", e);
         }
-        
-        conn.on('data', (data) => {
-            handleNetworkData(data);
-        });
-    });
+    }
 
-    conn.on('close', () => {
-        alert("Связь разорвана!");
-        location.reload();
-    });
-}
+    // Функция подключения к другу (КЛИЕНТ)
+    window.connectAsClient = function() {
+        const input = document.getElementById('peer-id-input');
+        const targetId = input ? input.value.trim() : "";
+        
+        if (!targetId) return alert("Введите ID хоста!");
+        
+        console.log("Подключаюсь к:", targetId);
+        conn = peer.connect(targetId);
+        isHost = false;
+        setupNetworkEvents();
+    };
+
+    function setupNetworkEvents() {
+        conn.on('open', () => {
+            console.log("Связь установлена!");
+            if (!isHost) {
+                if (typeof initGame === "function") initGame(2);
+                document.getElementById('ui-menu').classList.add('hidden');
+            }
+            
+            conn.on('data', (data) => {
+                // Синхронизация игроков
+                let remoteIdx = isHost ? 1 : 0;
+                if (players && players[remoteIdx]) {
+                    players[remoteIdx].x = data.x;
+                    players[remoteIdx].y = data.y;
+                    players[remoteIdx].angle = data.angle;
+                }
+            });
+        });
+    }
+
+    // Добавляем отправку позиции в основной цикл игры
+    function sync() {
+        if (conn && conn.open && players) {
+            let myIdx = isHost ? 0 : 1;
+            if (players[myIdx]) {
+                conn.send({
+                    x: players[myIdx].x,
+                    y: players[myIdx].y,
+                    angle: players[myIdx].angle
+                });
+            }
+        }
+        requestAnimationFrame(sync);
+    }
+    sync();
+})();
 
 // ===== CONSTANTS =====
 const TILE = 64;
