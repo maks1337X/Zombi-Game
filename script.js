@@ -50,6 +50,395 @@ let listeningCtx = 'menu';
 const maze = [];
 const tileRnd = [];
 const keys = {};
+// ===== MULTIPLAYER MQTT =====
+let mqttClient = null;
+let netRole = null;        // 'host' или 'client'
+let netRoom = '';
+let netConnected = false;
+let myPlayerId = 1;        // хост = 1, клиент = 2
+let clientInputState = {}; // последний ввод от клиента (для хоста)
+let netStatusEl = null;
+
+const MQTT_BROKER = 'broker.hivemq.com';
+const MQTT_PORT = 8000; // WebSocket порт
+
+function showNetworkMenu() {
+  document.getElementById('menu-main').classList.add('hidden');
+  document.getElementById('net-menu').classList.remove('hidden');
+  netStatusEl = document.getElementById('net-status');
+}
+
+function hideNetworkMenu() {
+  document.getElementById('net-menu').classList.add('hidden');
+  document.getElementById('menu-main').classList.remove('hidden');
+  disconnectMQTT();
+}
+
+function setNetStatus(msg, color) {
+  if (!netStatusEl) netStatusEl = document.getElementById('net-status');
+  netStatusEl.style.color = color || '#88bb66';
+  netStatusEl.textContent = msg;
+}
+
+function connectMQTT(room, role, onConnected) {
+  const clientId = 'zombie_' + role + '_' + Math.random().toString(36).slice(2, 8);
+  mqttClient = new Paho.MQTT.Client(MQTT_BROKER, MQTT_PORT, clientId);
+
+  mqttClient.onConnectionLost = function(resp) {
+    netConnected = false;
+    setNetStatus('❌ Соединение потеряно: ' + resp.errorMessage, '#ff6666');
+  };
+
+  mqttClient.onMessageArrived = function(msg) {
+    try {
+      const data = JSON.parse(msg.payloadString);
+      handleMQTTMessage(data, msg.destinationName);
+    } catch(e) {}
+  };
+
+  setNetStatus('⏳ Подключение к серверу...', '#ffcc00');
+
+  mqttClient.connect({
+    onSuccess: function() {
+      netConnected = true;
+      netRoom = room;
+      netRole = role;
+
+      // Подписываемся на нужные топики
+      if (role === 'host') {
+        // Хост слушает ввод от клиента
+        mqttClient.subscribe('zombie/' + room + '/client_input');
+        mqttClient.subscribe('zombie/' + room + '/client_join');
+      } else {
+        // Клиент слушает состояние игры от хоста
+        mqttClient.subscribe('zombie/' + room + '/game_state');
+        mqttClient.subscribe('zombie/' + room + '/host_events');
+      }
+
+      setNetStatus('✅ Подключено!', '#44ff88');
+      if (onConnected) onConnected();
+    },
+    onFailure: function(err) {
+      netConnected = false;
+      setNetStatus('❌ Ошибка подключения: ' + err.errorMessage, '#ff6666');
+    },
+    useSSL: false,
+    timeout: 10,
+    keepAliveInterval: 30
+  });
+}
+
+function publishMQTT(topic, data) {
+  if (!mqttClient || !netConnected) return;
+  try {
+    const msg = new Paho.MQTT.Message(JSON.stringify(data));
+    msg.destinationName = 'zombie/' + netRoom + '/' + topic;
+    msg.qos = 0;
+    mqttClient.send(msg);
+  } catch(e) {}
+}
+
+function disconnectMQTT() {
+  if (mqttClient && netConnected) {
+    try { mqttClient.disconnect(); } catch(e) {}
+  }
+  mqttClient = null;
+  netConnected = false;
+  netRole = null;
+}
+
+// ===== ХОСТ ЛОГИКА =====
+function startAsHost() {
+  const room = document.getElementById('net-room').value.trim();
+  if (!room) { setNetStatus('❌ Введи код комнаты!', '#ff6666'); return; }
+
+  connectMQTT(room, 'host', function() {
+    setNetStatus('👑 Ты хост! Ждём второго игрока... Код: ' + room, '#ffcc00');
+    myPlayerId = 1;
+    currentPlayers = 2;
+
+    // Ждём join от клиента
+    // Хост сам запускает игру когда клиент подключится
+  });
+}
+
+// ===== КЛИЕНТ ЛОГИКА =====
+function startAsClient() {
+  const room = document.getElementById('net-room').value.trim();
+  if (!room) { setNetStatus('❌ Введи код комнаты!', '#ff6666'); return; }
+
+  connectMQTT(room, 'client', function() {
+    setNetStatus('🎮 Подключён как клиент! Ждём хоста...', '#88bb66');
+    myPlayerId = 2;
+    currentPlayers = 2;
+
+    // Сообщаем хосту что подключились
+    publishMQTT('client_join', { playerId: 2, name: pNames[1], costume: pCostumes[1].id });
+  });
+}
+
+// ===== ОБРАБОТКА ВХОДЯЩИХ СООБЩЕНИЙ =====
+function handleMQTTMessage(data, topic) {
+  const topicEnd = topic.split('/').pop();
+
+  if (topicEnd === 'client_join' && netRole === 'host') {
+    // Клиент подключился — запускаем игру
+    setNetStatus('✅ Игрок 2 подключился! Запускаем...', '#44ff88');
+    if (data.name) pNames[1] = data.name;
+    if (data.costume) {
+      const co = COSTUMES.find(c => c.id === data.costume);
+      if (co) pCostumes[1] = co;
+    }
+    setTimeout(() => {
+      // Скрываем меню и запускаем игру
+      document.getElementById('ui-menu').classList.add('hidden');
+      initGame(2);
+      // Запускаем рассылку состояния
+      startHostBroadcast();
+    }, 500);
+  }
+
+  else if (topicEnd === 'client_input' && netRole === 'host') {
+    // Хост получает ввод от клиента и применяет к игроку 2
+    clientInputState = data;
+    applyClientInput(data);
+  }
+
+  else if (topicEnd === 'game_state' && netRole === 'client') {
+    // Клиент получает состояние и рендерит
+    applyGameState(data);
+  }
+
+  else if (topicEnd === 'host_events' && netRole === 'client') {
+    // События: смерть, новая волна и т.д.
+    applyHostEvent(data);
+  }
+}
+
+// ===== ХОСТ: применяет ввод клиента =====
+function applyClientInput(input) {
+  const p2 = players.find(p => p.id === 2);
+  if (!p2 || p2.hp <= 0) return;
+
+  // Симулируем нажатые клавиши для игрока 2
+  // Обнуляем управление p2 и задаём напрямую через флаги
+  p2._netInput = input;
+}
+
+// ===== ХОСТ: рассылка состояния =====
+let hostBroadcastInterval = null;
+
+function startHostBroadcast() {
+  if (hostBroadcastInterval) clearInterval(hostBroadcastInterval);
+  hostBroadcastInterval = setInterval(() => {
+    if (!netConnected || netRole !== 'host' || gState === 'MENU') return;
+    publishGameState();
+  }, 50); // 20 раз в секунду
+}
+
+function stopHostBroadcast() {
+  if (hostBroadcastInterval) { clearInterval(hostBroadcastInterval); hostBroadcastInterval = null; }
+}
+
+function publishGameState() {
+  const state = {
+    // Игроки
+    players: players.map(p => ({
+      id: p.id, x: Math.round(p.x), y: Math.round(p.y),
+      hp: Math.round(p.hp), maxHp: p.maxHp,
+      weapon: p.weapon, ammo: p.ammo, reserve: p.reserve,
+      reloading: p.reloading, mines: p.mines, barrels: p.barrels,
+      frozen: p.frozen, walk: Math.round(p.walk * 10) / 10,
+      carryAmmo: p.carryAmmo, carryMed: p.carryMed,
+      costume: p.costume ? p.costume.id : 'soldier',
+      name: p.name, color: p.color,
+      stText: p.stText, stUntil: p.stUntil
+    })),
+    // Зомби (сжато)
+    zombies: zombies.map(z => ({
+      x: Math.round(z.x), y: Math.round(z.y),
+      hp: Math.round(z.hp), maxHp: z.maxHp,
+      type: z.type, size: z.size, wOff: Math.round(z.wOff * 100) / 100
+    })),
+    // Пули
+    bullets: bullets.map(b => ({ x: Math.round(b.x), y: Math.round(b.y), vx: b.vx, vy: b.vy })),
+    // Монеты
+    coins: droppedCoins.slice(0, 30).map(c => ({ x: Math.round(c.x), y: Math.round(c.y), val: c.val })),
+    // Аптечки/патроны
+    ammoPickups: ammoPickups.map(a => ({ x: Math.round(a.x), y: Math.round(a.y) })),
+    medPickups: medPickups.map(m => ({ x: Math.round(m.x), y: Math.round(m.y) })),
+    // Мины и бочки
+    mines: mines.map(m => ({ x: Math.round(m.x), y: Math.round(m.y) })),
+    barrels: barrels.map(b => ({ x: Math.round(b.x), y: Math.round(b.y), hp: b.hp, maxHp: b.maxHp })),
+    // Снаряды босса
+    bossProj: bossProj.map(bp => ({ x: Math.round(bp.x), y: Math.round(bp.y), type: bp.type })),
+    // Яды
+    poisonPools: poisonPools.map(p => ({ x: Math.round(p.x), y: Math.round(p.y), timer: p.timer })),
+    // Общее
+    gCoins: gCoins, wave: wave, gState: gState,
+    base: { hp: Math.round(base.hp), maxHp: base.maxHp, alive: base.alive },
+    depotAmmo: depotAmmo, depotMed: depotMed,
+    tick: tick,
+    // Дроп
+    airdrop: airdropPlane ? { phase: airdropPlane.phase, x: Math.round(airdropPlane.x), y: Math.round(airdropPlane.y), type: airdropPlane.type, containerX: airdropPlane.containerX ? Math.round(airdropPlane.containerX) : null, containerY: airdropPlane.containerY ? Math.round(airdropPlane.containerY) : null } : null,
+    dmgNums: dmgNums.slice(0, 20).map(d => ({ x: Math.round(d.x), y: Math.round(d.y), val: d.val, life: d.life, max: d.max, crit: d.crit, isPlayer: d.isPlayer }))
+  };
+  publishMQTT('game_state', state);
+}
+
+// ===== КЛИЕНТ: применяет состояние =====
+function applyGameState(state) {
+  if (!state) return;
+
+  // Синхронизируем игроков
+  if (state.players) {
+    state.players.forEach(sp => {
+      let p = players.find(pl => pl.id === sp.id);
+      if (!p) return;
+
+      // Позицию игрока 1 берём от хоста полностью
+      // Позицию игрока 2 (себя) — только если разница большая (коррекция)
+      if (sp.id === 1) {
+        p.x = sp.x; p.y = sp.y;
+      } else {
+        // Мягкая коррекция позиции клиента
+        const dx = sp.x - p.x, dy = sp.y - p.y;
+        if (Math.hypot(dx, dy) > 40) { p.x = sp.x; p.y = sp.y; }
+        else { p.x += dx * 0.3; p.y += dy * 0.3; }
+      }
+
+      p.hp = sp.hp; p.maxHp = sp.maxHp;
+      p.weapon = sp.weapon; p.ammo = sp.ammo; p.reserve = sp.reserve;
+      p.reloading = sp.reloading; p.mines = sp.mines; p.barrels = sp.barrels;
+      p.frozen = sp.frozen; p.walk = sp.walk;
+      p.carryAmmo = sp.carryAmmo; p.carryMed = sp.carryMed;
+      p.name = sp.name; p.color = sp.color;
+      p.stText = sp.stText; p.stUntil = sp.stUntil;
+      if (sp.costume) {
+        const co = COSTUMES.find(c => c.id === sp.costume);
+        if (co) p.costume = co;
+      }
+    });
+  }
+
+  // Зомби
+  if (state.zombies) {
+    // Обновляем существующих или пересоздаём
+    if (Math.abs(zombies.length - state.zombies.length) > 3 || zombies.length === 0) {
+      zombies = state.zombies.map(sz => ({
+        x: sz.x, y: sz.y, hp: sz.hp, maxHp: sz.maxHp,
+        type: sz.type, size: sz.size, wOff: sz.wOff,
+        spd: 0, lastLeap: 0, leaping: false, leapVx: 0, leapVy: 0,
+        lastSpit: 0, rew: 1, stuckT: 0, lastX: sz.x, lastY: sz.y,
+        aggroTimer: 0
+      }));
+    } else {
+      state.zombies.forEach((sz, i) => {
+        if (zombies[i]) {
+          zombies[i].x += (sz.x - zombies[i].x) * 0.5;
+          zombies[i].y += (sz.y - zombies[i].y) * 0.5;
+          zombies[i].hp = sz.hp;
+          zombies[i].wOff = sz.wOff;
+        }
+      });
+      zombies.length = state.zombies.length;
+    }
+  }
+
+  // Пули (просто перезаписываем)
+  if (state.bullets) {
+    bullets = state.bullets.map(b => ({ x: b.x, y: b.y, vx: b.vx, vy: b.vy, dmg: 0, owner: 0 }));
+  }
+
+  // Монеты
+  if (state.coins) {
+    droppedCoins = state.coins.map(c => ({ x: c.x, y: c.y, val: c.val, hover: 0 }));
+  }
+
+  // Аптечки/патроны
+  if (state.ammoPickups) ammoPickups = state.ammoPickups.map(a => ({ x: a.x, y: a.y, bob: 0 }));
+  if (state.medPickups) medPickups = state.medPickups.map(m => ({ x: m.x, y: m.y, bob: 0 }));
+
+  // Мины/бочки
+  if (state.mines) mines = state.mines.map(m => ({ x: m.x, y: m.y, timer: 0 }));
+  if (state.barrels) barrels = state.barrels.map(b => ({ x: b.x, y: b.y, hp: b.hp, maxHp: b.maxHp }));
+
+  // Снаряды
+  if (state.bossProj) bossProj = state.bossProj.map(bp => ({ x: bp.x, y: bp.y, vx: 0, vy: 0, type: bp.type, dmg: 0 }));
+
+  // Яды
+  if (state.poisonPools) poisonPools = state.poisonPools.map(p => ({ x: p.x, y: p.y, timer: p.timer }));
+
+  // Общее состояние
+  gCoins = state.gCoins;
+  wave = state.wave;
+  depotAmmo = state.depotAmmo;
+  depotMed = state.depotMed;
+  tick = state.tick;
+
+  if (state.base) {
+    base.hp = state.base.hp;
+    base.maxHp = state.base.maxHp;
+    base.alive = state.base.alive;
+  }
+
+  // Аирдроп
+  if (state.airdrop) {
+    if (!airdropPlane) airdropPlane = { x: state.airdrop.x, y: state.airdrop.y, type: state.airdrop.type, phase: state.airdrop.phase, containerX: state.airdrop.containerX, containerY: state.airdrop.containerY, containerVY: 0, speed: 5, dropped: true, containerLanded: false, landTimer: 60, zombieDropped: false, targetX: state.airdrop.containerX, targetY: state.airdrop.containerY };
+    else {
+      airdropPlane.x = state.airdrop.x;
+      airdropPlane.phase = state.airdrop.phase;
+      airdropPlane.containerX = state.airdrop.containerX;
+      airdropPlane.containerY = state.airdrop.containerY;
+    }
+  } else {
+    airdropPlane = null;
+  }
+
+  // Цифры урона
+  if (state.dmgNums) {
+    state.dmgNums.forEach(d => {
+      if (!dmgNums.find(dn => Math.abs(dn.x - d.x) < 5 && Math.abs(dn.y - d.y) < 5 && dn.val === d.val)) {
+        dmgNums.push({ x: d.x, y: d.y, val: d.val, life: d.life, max: d.max, crit: d.crit, isPlayer: d.isPlayer });
+      }
+    });
+  }
+
+  // Применяем состояние игры
+  if (state.gState && state.gState !== gState) {
+    if (state.gState === 'DEAD') {
+      endGame('');
+    }
+  }
+
+  updateUI();
+  updateBaseUI();
+}
+
+function applyHostEvent(event) {
+  if (!event) return;
+  if (event.type === 'wave_start') {
+    showWaveAnn('🌲 ВОЛНА ' + event.wave);
+  }
+  if (event.type === 'airdrop') {
+    const ann = document.getElementById('airdrop-ann');
+    ann.innerHTML = event.html || '';
+    ann.classList.add('show');
+    setTimeout(() => ann.classList.remove('show'), 3500);
+  }
+  if (event.type === 'sound') {
+    // Воспроизводим звук на клиенте
+    if (event.snd === 'shoot') sndShoot(event.wk);
+    if (event.snd === 'pickup') sndPickup();
+    if (event.snd === 'heal') sndHeal();
+    if (event.snd === 'reload') sndReload();
+    if (event.snd === 'mine') sndMineExplode();
+    if (event.snd === 'wave') sndWaveAlert();
+    if (event.snd === 'playerhit') sndPlayerHit();
+    if (event.snd === 'basehit') sndBaseHit();
+  }
+}
+
 let mDown = false;
 let floorCache = null;
 
@@ -612,35 +1001,45 @@ function playTone(type,freq,endFreq,gain,dur,filtType,filtFreq){
  }catch(e){}
 }
 function sndShoot(wk){
+   if(netRole === 'host') publishMQTT('host_events', { type: 'sound', snd: 'shoot', wk: wk });
+  // ... остальной код без изменений
  ensAudio();if(!audioCtx)return;
  const p={pistol:[300,110,0.065,0.09],smg:[430,160,0.044,0.05],shotgun:[170,60,0.11,0.12],rifle:[540,200,0.075,0.08],minigun:[370,140,0.03,0.035]}[wk]||[300,110,0.065,0.09];
  playTone('square',p[0],p[1],p[2],p[3],'lowpass',2600);
 }
 function sndMineExplode(){
+   if(netRole === 'host') publishMQTT('host_events', { type: 'sound', snd: 'mine' });
  ensAudio();if(!audioCtx)return;
  playTone('sine',130,28,0.28,0.55,'lowpass',400);
  setTimeout(()=>playTone('sawtooth',700,90,0.12,0.28),30);
  setTimeout(()=>playTone('triangle',440,80,0.08,0.2),60);
 }
 function sndReload(){
+  if(netRole === 'host') publishMQTT('host_events', { type: 'sound', snd: 'reload' });
  ensAudio();if(!audioCtx)return;
  [0,0.1,0.22].forEach((d,i)=>{setTimeout(()=>playTone('square',i===2?750:480,180,0.055,0.05),d*1000);});
 }
 function sndHeal(){
+  if(netRole === 'host') publishMQTT('host_events', { type: 'sound', snd: 'heal' });
  ensAudio();if(!audioCtx)return;
  [440,660,880].forEach((f,i)=>setTimeout(()=>playTone('sine',f,f*0.98,0.044,0.14),i*90));
 }
 function sndPickup(){
+   if(netRole === 'host') publishMQTT('host_events', { type: 'sound', snd: 'pickup' });
  ensAudio();if(!audioCtx)return;
  playTone('triangle',520,620,0.04,0.12);
 }
-function sndBaseHit(){playTone('sawtooth',85,38,0.055,0.18,'lowpass',380);}
+function sndBaseHit(){
+  if(netRole === 'host') publishMQTT('host_events', { type: 'sound', snd: 'basehit' });
+  playTone('sawtooth',85,38,0.055,0.18,'lowpass',380);}
 function sndZombieHit(){playTone('sawtooth',130+Math.random()*40,50,0.022,0.13,'bandpass',260+Math.random()*80);}
 function sndBarrelBreak(){
  ensAudio();if(!audioCtx)return;
  [0,0.06,0.14].forEach(d=>setTimeout(()=>playTone('sawtooth',320+Math.random()*180,75,0.055,0.08),d*1000));
 }
-function sndPlayerHit(){playTone('triangle',380,140,0.06,0.1,'lowpass',900);}
+function sndPlayerHit(){
+  if(netRole === 'host') publishMQTT('host_events', { type: 'sound', snd: 'playerhit' });
+  playTone('triangle',380,140,0.06,0.1,'lowpass',900);}
 function sndWaveAlert(){
  ensAudio();if(!audioCtx)return;
  playTone('sawtooth',40,180,0.18,1.4,'lowpass',500);
@@ -958,6 +1357,11 @@ function drawAirdrop(){
 }
 // ===== WAVES =====
 function showWaveAnn(txt){
+  // Хост рассылает событие клиенту
+  if(netRole === 'host') {
+    publishMQTT('host_events', { type: 'wave_start', wave: wave });
+  }
+  // ... остальной код без изменений
  const el=document.getElementById('wave-ann');
  el.innerHTML=txt;el.classList.add('show');
  setTimeout(()=>el.classList.remove('show'),2600);
@@ -1080,6 +1484,12 @@ function initGame(numPlayers){
  cam.x=base.x;cam.y=base.y;
  for(const k in WEAPONS)WEAPONS[k].owned=(k==='pistol');
  gState='PLAYING';
+// Если клиент — не запускать игровую логику хоста
+  if(netRole === 'client') {
+    // Клиент только рендерит, логику гоняет хост
+    gState = 'PLAYING';
+    return; // НЕ вызываем nextWave() и т.д.
+  }
  ensAudio();startAmbient();
  document.getElementById('ui-menu').classList.add('hidden');
  document.getElementById('ui-death').classList.add('hidden');
@@ -1088,13 +1498,17 @@ function initGame(numPlayers){
  document.getElementById('ui-pause-ctrl').classList.add('hidden');
  document.getElementById('base-ui').classList.remove('dead');
  document.getElementById('base-ttl').classList.remove('dead');
- spawnInitSupplies();
- nextWave();
- updateUI();
- renderShop();
+spawnInitSupplies();
+nextWave();
+updateUI();
+renderShop();
 }
 
 function goMainMenu(){
+  stopHostBroadcast();  // <-- добавить
+  disconnectMQTT();     // <-- добавить
+  netRole = null;       // <-- добавить
+  // ... остальной код без изменений
  gState='MENU';stopAmbient();
  airdropPlane=null;
  document.getElementById('ui-menu').classList.remove('hidden');
@@ -1366,6 +1780,8 @@ function trySpawn(){
 // ===== UPDATE =====
 function update(){
  if(gState!=='PLAYING')return;
+ if(netRole === 'client') return;
+
  tick++;
  fpsCnt++;
  const nowT=performance.now();
@@ -1388,6 +1804,35 @@ function update(){
  let moved=false;
  let nx=p.x,ny=p.y;
  if(keys[p.controls.up]){ny-=spd;moved=true;}
+  // Сетевой ввод для игрока 2 (когда ты хост)
+if(netRole === 'host' && p.id === 2 && p._netInput) {
+    const ni = p._netInput;
+    let nx2 = p.x, ny2 = p.y;
+    let moved2 = false;
+    if(ni.up){ny2-=spd;moved2=true;}
+    if(ni.down){ny2+=spd;moved2=true;}
+    if(!colCheck(p.x,ny2,p.size))p.y=clamp(ny2,0,MAPSZ*TILE-p.size);
+    if(ni.left){nx2-=spd;moved2=true;}
+    if(ni.right){nx2+=spd;moved2=true;}
+    if(!colCheck(nx2,p.y,p.size))p.x=clamp(nx2,0,MAPSZ*TILE-p.size);
+    if(moved2)p.walk=(p.walk||0)+0.2;
+    if(ni.shoot){
+        let target=null,minD=Infinity;
+        for(const z of zombies){
+            const d=Math.hypot((p.x+p.size/2)-(z.x+z.size/2),(p.y+p.size/2)-(z.y+z.size/2));
+            if(d<minD&&d<580){minD=d;target=z;}
+        }
+        if(target)shoot(p,target.x+target.size/2,target.y+target.size/2);
+    }
+    continue;
+}
+
+// Если мы клиент — игрок 1 не управляется локально (им управляет хост)
+if(netRole === 'client' && p.id === 1) continue;
+
+// Если мы не в сети — всё работает как раньше (ничего не меняем)
+
+  {ny-=spd;moved=true;}
  if(keys[p.controls.down]){ny+=spd;moved=true;}
  if(!colCheck(p.x,ny,p.size))p.y=clamp(ny,0,MAPSZ*TILE-p.size);
  if(keys[p.controls.left]){nx-=spd;moved=true;}
@@ -1627,6 +2072,23 @@ function update(){
  if(zombies.length===0&&!waveSpawning) nextWave();
  trySpawn();
  updateUI();
+// Клиент отправляет свой ввод хосту
+  if(netRole === 'client' && netConnected && gState === 'PLAYING') {
+    const p2 = players.find(p => p.id === 2);
+    if(p2) {
+      publishMQTT('client_input', {
+        up: !!keys[p2.controls.up],
+        down: !!keys[p2.controls.down],
+        left: !!keys[p2.controls.left],
+        right: !!keys[p2.controls.right],
+        shoot: !!keys[p2.controls.shoot],
+        reload: false, // обрабатывается через keydown
+        mine: false,
+        barrel: false,
+        interact: false
+      });
+    }
+  }
 }
 
 // ===== DRAW BASE =====
