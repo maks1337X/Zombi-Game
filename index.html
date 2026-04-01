@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Лесное Месиво — Зомби Кооператив</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
 </head>
 <body>
     <div id="ui-menu" class="overlay">
@@ -53,6 +54,11 @@
  </div>
  </div>
  <div class="mode-btns">
+     <div class="mode-card" onclick="showNetworkMenu()">
+  <div style="font-size:2.2rem;">🌐</div>
+  <h3>СЕТЕВАЯ ИГРА</h3>
+  <p>Играй с другом через интернет по MQTT протоколу.</p>
+</div>
  <div class="mode-card" onclick="initGame(2)">
  <div style="font-size:2.2rem;">🖥️</div>
  <h3>ЗА ОДНИМ КОМПЬЮТЕРОМ</h3>
