@@ -1,8 +1,10 @@
-// ===== MQTT МУЛЬТИПЛЕЕР (БЕЗ СЕРВЕРА И VPN) =====
+// ===== УЛУЧШЕННЫЙ СЕТЕВОЙ МОДУЛЬ =====
 let mqttClient = null;
 let roomID = "";
 let playerRole = ""; 
-let myIdx = 0; // 0 - Хост (Зеленый), 1 - Клиент (Синий)
+let myIdx = 0; 
+let isConnected = false;
+let ping = 0;
 
 window.startMultiplayer = function(role) {
     const nameInput = document.getElementById('room-name');
@@ -10,64 +12,81 @@ window.startMultiplayer = function(role) {
     
     roomID = nameInput.value.trim();
     playerRole = role;
-    
-    // Устанавливаем, кем мы управляем
     myIdx = (role === 'host') ? 0 : 1;
     
-    document.getElementById('net-status').innerText = "Подключение...";
+    // Отключаем разделение экрана для сетевой игры
+    currentPlayers = 1; 
 
-    mqttClient = new Paho.MQTT.Client("broker.emqx.io", 8084, "player_" + Math.random().toString(16).slice(2));
+    const statusEl = document.getElementById('net-status');
+    statusEl.innerText = "Подключение к серверу...";
 
-    mqttClient.onConnectionLost = (resp) => {
-        document.getElementById('net-status').innerText = "Связь потеряна!";
-    };
+    mqttClient = new Paho.MQTT.Client("broker.emqx.io", 8084, "p_" + Math.random().toString(16).slice(2));
 
     mqttClient.onMessageArrived = (msg) => {
-        const data = JSON.parse(msg.payloadString);
-        
-        // Находим индекс ВТОРОГО игрока (не нас)
-        let otherIdx = (myIdx === 0) ? 1 : 0;
-        
-        if (window.players && window.players[otherIdx]) {
-            // Обновляем координаты чужого игрока
-            window.players[otherIdx].x = data.x;
-            window.players[otherIdx].y = data.y;
-            window.players[otherIdx].angle = data.angle;
-        }
+        try {
+            const data = JSON.parse(msg.payloadString);
+            
+            // Рукопожатие (Handshake)
+            if (data.type === 'HELO' && playerRole === 'host') {
+                sendNetData({ type: 'WELCOME' });
+                isConnected = true;
+                statusEl.innerText = "Игрок подключился!";
+            }
+            if (data.type === 'WELCOME' && playerRole === 'client') {
+                isConnected = true;
+                statusEl.innerText = "Связь с хостом установлена!";
+            }
+
+            // Расчет пинга
+            if (data.ts) ping = Date.now() - data.ts;
+
+            // Синхронизация позиций
+            if (data.type === 'POS') {
+                let otherIdx = (myIdx === 0) ? 1 : 0;
+                if (players[otherIdx]) {
+                    players[otherIdx].x = data.x;
+                    players[otherIdx].y = data.y;
+                    players[otherIdx].angle = data.angle;
+                    players[otherIdx].hp = data.hp;
+                }
+            }
+        } catch(e) {}
     };
 
     mqttClient.connect({
         useSSL: true,
         onSuccess: () => {
-            document.getElementById('net-status').innerText = "В СЕТИ! Комната: " + roomID;
-            document.getElementById('net-status').style.color = "#00ff00";
-            
-            // Слушаем топик напарника
+            statusEl.innerText = (role === 'host') ? "Ожидание игрока..." : "Поиск хоста...";
             const subTopic = (myIdx === 0) ? `zombs/${roomID}/client` : `zombs/${roomID}/host`;
             mqttClient.subscribe(subTopic);
             
-            // Запускаем игру на 2 игрока
+            if (role === 'client') {
+                // Клиент стучится к хосту
+                setTimeout(() => sendNetData({ type: 'HELO' }), 500);
+            }
+            
             if (typeof initGame === "function") initGame(2);
             document.getElementById('ui-menu').classList.add('hidden');
-            
             syncPos();
         }
     });
 };
 
-function syncPos() {
+function sendNetData(obj) {
     if (mqttClient && mqttClient.isConnected()) {
-        // Отправляем данные ТОЛЬКО своего персонажа
-        if (window.players && window.players[myIdx]) {
-            const myData = {
-                x: window.players[myIdx].x,
-                y: window.players[myIdx].y,
-                angle: window.players[myIdx].angle
-            };
-            const pubTopic = (myIdx === 0) ? `zombs/${roomID}/host` : `zombs/${roomID}/client`;
-            const message = new Paho.MQTT.Message(JSON.stringify(myData));
-            message.destinationName = pubTopic;
-            mqttClient.send(message);
+        obj.ts = Date.now();
+        const pubTopic = (myIdx === 0) ? `zombs/${roomID}/host` : `zombs/${roomID}/client`;
+        const message = new Paho.MQTT.Message(JSON.stringify(obj));
+        message.destinationName = pubTopic;
+        mqttClient.send(message);
+    }
+}
+
+function syncPos() {
+    if (isConnected) {
+        const p = players[myIdx];
+        if (p) {
+            sendNetData({ type: 'POS', x: p.x, y: p.y, angle: p.angle, hp: p.hp });
         }
     }
     requestAnimationFrame(syncPos);
@@ -1455,34 +1474,39 @@ function update(){
  if(base.hp>0)updateFF(flowB,[{x:base.x,y:base.y}]);
  }
  for(const p of players){if(p.frozen>0){p.frozen--;p.slow=0.6;}else p.slow=1;}
- // ===== Движение игрока (Сетевая версия) =====
-// Управляем только СВОИМ персонажем
+// ДВИЖЕНИЯ
 const p = players[myIdx]; 
-
 if (p && p.hp > 0) {
     const spd = p.spd * (p.slow || 1);
     let moved = false;
     let nx = p.x, ny = p.y;
 
-    // Используем управление из объекта игрока, но теперь только для себя
     if (keys[p.controls.up]) { ny -= spd; moved = true; }
     if (keys[p.controls.down]) { ny += spd; moved = true; }
-    
-    // Проверка столкновений и перемещение по Y
-    if (!colCheck(p.x, ny, p.size)) {
-        p.y = Math.max(0, Math.min(ny, MAPSZ * TILE - p.size));
-    }
+    if (!colCheck(p.x, ny, p.size)) p.y = Math.max(0, Math.min(ny, MAPSZ * TILE - p.size));
 
     if (keys[p.controls.left]) { nx -= spd; moved = true; }
     if (keys[p.controls.right]) { nx += spd; moved = true; }
-
-    // Проверка столкновений и перемещение по X
-    if (!colCheck(nx, p.y, p.size)) {
-        p.x = Math.max(0, Math.min(nx, MAPSZ * TILE - p.size));
-    }
-
+    if (!colCheck(nx, p.y, p.size)) p.x = Math.max(0, Math.min(nx, MAPSZ * TILE - p.size));
+    
     if (moved) p.walk = (p.walk || 0) + 0.2;
 
+    // Угол поворота за мышью
+    const screenX = p.x - cam.x + (canvas.width / 2);
+    const screenY = p.y - cam.y + (canvas.height / 2);
+    p.angle = Math.atan2(mouseY - screenY, mouseX - screenX);
+
+    // Стрельба (только для своего игрока)
+    const doShoot = keys[p.controls.shoot] || (mDown && myIdx === 0);
+    if (doShoot) {
+        let target = null, minD = Infinity;
+        for (const z of zombies) {
+            const d = Math.hypot((p.x + p.size/2) - (z.x + z.size/2), (p.y + p.size/2) - (z.y + z.size/2));
+            if (d < minD && d < 580) { minD = d; target = z; }
+        }
+        if (target) shoot(p, target.x + target.size/2, target.y + target.size/2);
+    }
+}
     // Логика стрельбы (только для своего игрока)
     const doShoot = keys[p.controls.shoot] || (mDown && myIdx === 0); 
     if (doShoot) {
@@ -2064,4 +2088,9 @@ function resizeCanvas(){canvas.width=window.innerWidth;canvas.height=window.inne
 window.addEventListener('resize',resizeCanvas);
 resizeCanvas();
 draw();
+if (isConnected) {
+    ctx.fillStyle = ping > 150 ? '#ff4444' : '#44ff44';
+    ctx.font = 'bold 16px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText(`PING: ${ping}ms`, 20, canvas.height - 30);
 setInterval(update,1000/60);
