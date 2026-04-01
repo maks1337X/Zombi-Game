@@ -8,8 +8,22 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
 </head>
 <body>
-    <div id="ui-menu" class="overlay">
-        <div id="net-menu" class="hidden" style="text-align:center;width:min(520px,calc(100vw - 12px));">
+    <div id="ui-menu" class="overlay">    
+ <div style="text-align:center;width:min(880px,calc(100vw - 12px));">
+ <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:2px;">
+ <span style="font-size:1.8rem;">🌲</span>
+ <div class="menu-title">ЛЕСНОЕ МЕСИВО</div>
+ <span style="font-size:1.8rem;">🌲</span>
+ </div>
+ <div class="menu-sub">☠ Лесной кошмар — КООП ☠</div>
+ <div id="menu-main">
+ <div class="menu-card">
+ <div class="menu-tabs" id="menu-tabs">
+ <div class="menu-tab active" data-tab="howto">📖 КАК ИГРАТЬ</div>
+ <div class="menu-tab" data-tab="controls">🎮 УПРАВЛЕНИЕ</div>
+ <div class="menu-tab" data-tab="costumes">👕 КОСТЮМЫ</div>
+ </div>
+ <div id="net-menu" class="hidden" style="text-align:center;width:min(520px,calc(100vw - 12px));">
   <div class="menu-card">
     <div style="font-size:1.1rem;color:#ccff88;font-weight:800;margin-bottom:12px;">🌐 СЕТЕВАЯ ИГРА</div>
     
@@ -35,20 +49,6 @@
     </button>
   </div>
 </div>
- <div style="text-align:center;width:min(880px,calc(100vw - 12px));">
- <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:2px;">
- <span style="font-size:1.8rem;">🌲</span>
- <div class="menu-title">ЛЕСНОЕ МЕСИВО</div>
- <span style="font-size:1.8rem;">🌲</span>
- </div>
- <div class="menu-sub">☠ Лесной кошмар — КООП ☠</div>
- <div id="menu-main">
- <div class="menu-card">
- <div class="menu-tabs" id="menu-tabs">
- <div class="menu-tab active" data-tab="howto">📖 КАК ИГРАТЬ</div>
- <div class="menu-tab" data-tab="controls">🎮 УПРАВЛЕНИЕ</div>
- <div class="menu-tab" data-tab="costumes">👕 КОСТЮМЫ</div>
- </div>
  <div class="tab-panel active" id="tab-howto">
  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;text-align:left;">
  <div style="background:rgba(0,180,255,0.06);border:1px solid rgba(0,180,255,0.2);border-radius:8px;padding:9px;">
@@ -80,7 +80,7 @@
  </div>
  </div>
  <div class="mode-btns">
-     <div class="mode-card" onclick="showNetworkMenu()">
+    <div class="mode-card" onclick="showNetworkMenu()">
   <div style="font-size:2.2rem;">🌐</div>
   <h3>СЕТЕВАЯ ИГРА</h3>
   <p>Играй с другом через интернет по MQTT протоколу.</p>
