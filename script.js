@@ -1,11 +1,22 @@
-// ===== СЕТЕВАЯ ЛОГИКА (PeerJS) =====
-const peer = new Peer(undefined, {
-    host: '0.peerjs.com',
-    port: 443,
-    path: '/',
+// Используем альтернативные настройки, чтобы обойти блокировку 403
+const peer = new Peer(Math.random().toString(36).substr(2, 9), {
+    host: 'peerjs-server.herokuapp.com', // Пробуем альтернативный хост
     secure: true,
-    debug: 3
+    port: 443,
+    config: {
+        'iceServers': [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' }
+        ]
+    }
 });
+
+// Добавляем отлов ошибок, чтобы в консоли было понятно, что происходит
+peer.on('error', (err) => {
+    console.error('Сетевая ошибка:', err.type);
+    document.getElementById('mp-my-id').innerText = "Ошибка сети: " + err.type;
+});
+
 let conn = null;
 let isHost = false;
 
