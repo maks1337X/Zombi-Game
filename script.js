@@ -1,101 +1,83 @@
-// ===== ФИКС МУЛЬТИПЛЕЕРА =====
-(function() {
-    // Ждем, пока всё загрузится, чтобы не было ошибки "canvas is not defined"
-    window.addEventListener('load', () => {
-        initNetwork();
-    });
+// ===== MQTT МУЛЬТИПЛЕЕР (БЕЗ СЕРВЕРА И VPN) =====
+let mqttClient = null;
+let roomID = "";
+let playerRole = ""; // 'host' или 'client'
 
-    let peer = null;
-    let conn = null;
-    let isHost = false;
+window.startMultiplayer = function(role) {
+    const nameInput = document.getElementById('room-name');
+    if (!nameInput.value) return alert("Введите название комнаты!");
+    
+    roomID = nameInput.value.trim();
+    playerRole = role;
+    
+    document.getElementById('net-status').innerText = "Подключение...";
 
-    function initNetwork() {
-        const mpStatus = document.getElementById('mp-my-id');
-        
-        // Попытка создать подключение с настройками для обхода блокировок
-        try {
-            peer = new Peer(undefined, {
-                debug: 2
-            });
+    // Используем публичный бесплатный брокер EMQX (очень стабильный)
+    mqttClient = new Paho.MQTT.Client("broker.emqx.io", 8084, "player_" + Math.random().toString(16).slice(2));
 
-            peer.on('open', (id) => {
-                console.log('ID получен:', id);
-                if(mpStatus) {
-                    mpStatus.innerText = "Ваш ID: " + id;
-                    mpStatus.style.color = "#88ff88";
-                }
-            });
-
-            peer.on('error', (err) => {
-                console.error('Ошибка PeerJS:', err.type);
-                if(mpStatus) {
-                    mpStatus.innerText = "Ошибка: " + err.type;
-                    mpStatus.style.color = "#ff5555";
-                }
-            });
-
-            // Обработка входящего подключения (Мы - ХОСТ)
-            peer.on('connection', (connection) => {
-                conn = connection;
-                isHost = true;
-                setupNetworkEvents();
-                alert("Игрок 2 подключился!");
-                if (typeof initGame === "function") initGame(2);
-            });
-        } catch (e) {
-            console.error("Критическая ошибка инициализации сети:", e);
-        }
-    }
-
-    // Функция подключения к другу (КЛИЕНТ)
-    window.connectAsClient = function() {
-        const input = document.getElementById('peer-id-input');
-        const targetId = input ? input.value.trim() : "";
-        
-        if (!targetId) return alert("Введите ID хоста!");
-        
-        console.log("Подключаюсь к:", targetId);
-        conn = peer.connect(targetId);
-        isHost = false;
-        setupNetworkEvents();
+    mqttClient.onConnectionLost = (resp) => {
+        document.getElementById('net-status').innerText = "Связь потеряна!";
+        console.log("Lost:", resp.errorMessage);
     };
 
-    function setupNetworkEvents() {
-        conn.on('open', () => {
-            console.log("Связь установлена!");
-            if (!isHost) {
-                if (typeof initGame === "function") initGame(2);
-                document.getElementById('ui-menu').classList.add('hidden');
-            }
-            
-            conn.on('data', (data) => {
-                // Синхронизация игроков
-                let remoteIdx = isHost ? 1 : 0;
-                if (players && players[remoteIdx]) {
-                    players[remoteIdx].x = data.x;
-                    players[remoteIdx].y = data.y;
-                    players[remoteIdx].angle = data.angle;
-                }
-            });
-        });
-    }
-
-    // Добавляем отправку позиции в основной цикл игры
-    function sync() {
-        if (conn && conn.open && players) {
-            let myIdx = isHost ? 0 : 1;
-            if (players[myIdx]) {
-                conn.send({
-                    x: players[myIdx].x,
-                    y: players[myIdx].y,
-                    angle: players[myIdx].angle
-                });
-            }
+    mqttClient.onMessageArrived = (msg) => {
+        const data = JSON.parse(msg.payloadString);
+        
+        // Получаем данные другого игрока
+        // Если я хост, слушаю топик клиента. Если я клиент — топик хоста.
+        let otherIdx = (playerRole === 'host') ? 1 : 0;
+        
+        if (window.players && window.players[otherIdx]) {
+            window.players[otherIdx].x = data.x;
+            window.players[otherIdx].y = data.y;
+            window.players[otherIdx].angle = data.angle;
         }
-        requestAnimationFrame(sync);
+    };
+
+    mqttClient.connect({
+        useSSL: true,
+        onSuccess: () => {
+            document.getElementById('net-status').innerText = "В СЕТИ! Ждем друга...";
+            document.getElementById('net-status').style.color = "#00ff00";
+            
+            // Подписываемся на данные напарника
+            const subTopic = (playerRole === 'host') ? `zombs/${roomID}/client` : `zombs/${roomID}/host`;
+            mqttClient.subscribe(subTopic);
+            
+            // Запускаем игру
+            if (typeof initGame === "function") initGame(2);
+            document.getElementById('ui-menu').classList.add('hidden');
+            
+            // Запускаем цикл отправки своих координат
+            syncPos();
+        },
+        onFailure: (err) => {
+            document.getElementById('net-status').innerText = "Ошибка брокера!";
+            console.error(err);
+        }
+    });
+};
+
+function syncPos() {
+    if (mqttClient && mqttClient.isConnected()) {
+        let myIdx = (playerRole === 'host') ? 0 : 1;
+        if (window.players && window.players[myIdx]) {
+            const myData = {
+                x: window.players[myIdx].x,
+                y: window.players[myIdx].y,
+                angle: window.players[myIdx].angle
+            };
+            const pubTopic = (playerRole === 'host') ? `zombs/${roomID}/host` : `zombs/${roomID}/client`;
+            const message = new Paho.MQTT.Message(JSON.stringify(myData));
+            message.destinationName = pubTopic;
+            message.qos = 0; // Самый быстрый режим передачи
+            mqttClient.send(message);
+        }
     }
-    sync();
-})();
+    requestAnimationFrame(syncPos);
+}
+const canvas = document.getElementById('gc');
+const ctx = canvas.getContext('2d');
 
 // ===== CONSTANTS =====
 const TILE = 64;
