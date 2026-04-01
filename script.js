@@ -1,7 +1,8 @@
 // ===== MQTT МУЛЬТИПЛЕЕР (БЕЗ СЕРВЕРА И VPN) =====
 let mqttClient = null;
 let roomID = "";
-let playerRole = ""; // 'host' или 'client'
+let playerRole = ""; 
+let myIdx = 0; // 0 - Хост (Зеленый), 1 - Клиент (Синий)
 
 window.startMultiplayer = function(role) {
     const nameInput = document.getElementById('room-name');
@@ -10,24 +11,25 @@ window.startMultiplayer = function(role) {
     roomID = nameInput.value.trim();
     playerRole = role;
     
+    // Устанавливаем, кем мы управляем
+    myIdx = (role === 'host') ? 0 : 1;
+    
     document.getElementById('net-status').innerText = "Подключение...";
 
-    // Используем публичный бесплатный брокер EMQX (очень стабильный)
     mqttClient = new Paho.MQTT.Client("broker.emqx.io", 8084, "player_" + Math.random().toString(16).slice(2));
 
     mqttClient.onConnectionLost = (resp) => {
         document.getElementById('net-status').innerText = "Связь потеряна!";
-        console.log("Lost:", resp.errorMessage);
     };
 
     mqttClient.onMessageArrived = (msg) => {
         const data = JSON.parse(msg.payloadString);
         
-        // Получаем данные другого игрока
-        // Если я хост, слушаю топик клиента. Если я клиент — топик хоста.
-        let otherIdx = (playerRole === 'host') ? 1 : 0;
+        // Находим индекс ВТОРОГО игрока (не нас)
+        let otherIdx = (myIdx === 0) ? 1 : 0;
         
         if (window.players && window.players[otherIdx]) {
+            // Обновляем координаты чужого игрока
             window.players[otherIdx].x = data.x;
             window.players[otherIdx].y = data.y;
             window.players[otherIdx].angle = data.angle;
@@ -37,40 +39,34 @@ window.startMultiplayer = function(role) {
     mqttClient.connect({
         useSSL: true,
         onSuccess: () => {
-            document.getElementById('net-status').innerText = "В СЕТИ! Ждем друга...";
+            document.getElementById('net-status').innerText = "В СЕТИ! Комната: " + roomID;
             document.getElementById('net-status').style.color = "#00ff00";
             
-            // Подписываемся на данные напарника
-            const subTopic = (playerRole === 'host') ? `zombs/${roomID}/client` : `zombs/${roomID}/host`;
+            // Слушаем топик напарника
+            const subTopic = (myIdx === 0) ? `zombs/${roomID}/client` : `zombs/${roomID}/host`;
             mqttClient.subscribe(subTopic);
             
-            // Запускаем игру
+            // Запускаем игру на 2 игрока
             if (typeof initGame === "function") initGame(2);
             document.getElementById('ui-menu').classList.add('hidden');
             
-            // Запускаем цикл отправки своих координат
             syncPos();
-        },
-        onFailure: (err) => {
-            document.getElementById('net-status').innerText = "Ошибка брокера!";
-            console.error(err);
         }
     });
 };
 
 function syncPos() {
     if (mqttClient && mqttClient.isConnected()) {
-        let myIdx = (playerRole === 'host') ? 0 : 1;
+        // Отправляем данные ТОЛЬКО своего персонажа
         if (window.players && window.players[myIdx]) {
             const myData = {
                 x: window.players[myIdx].x,
                 y: window.players[myIdx].y,
                 angle: window.players[myIdx].angle
             };
-            const pubTopic = (playerRole === 'host') ? `zombs/${roomID}/host` : `zombs/${roomID}/client`;
+            const pubTopic = (myIdx === 0) ? `zombs/${roomID}/host` : `zombs/${roomID}/client`;
             const message = new Paho.MQTT.Message(JSON.stringify(myData));
             message.destinationName = pubTopic;
-            message.qos = 0; // Самый быстрый режим передачи
             mqttClient.send(message);
         }
     }
