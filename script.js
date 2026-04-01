@@ -1455,27 +1455,50 @@ function update(){
  if(base.hp>0)updateFF(flowB,[{x:base.x,y:base.y}]);
  }
  for(const p of players){if(p.frozen>0){p.frozen--;p.slow=0.6;}else p.slow=1;}
- // Движение игроков
- for(const p of players){
- if(p.hp<=0)continue;
- const spd=p.spd*p.slow;
- let moved=false;
- let nx=p.x,ny=p.y;
- if(keys[p.controls.up]){ny-=spd;moved=true;}
- if(keys[p.controls.down]){ny+=spd;moved=true;}
- if(!colCheck(p.x,ny,p.size))p.y=clamp(ny,0,MAPSZ*TILE-p.size);
- if(keys[p.controls.left]){nx-=spd;moved=true;}
- if(keys[p.controls.right]){nx+=spd;moved=true;}
- if(!colCheck(nx,p.y,p.size))p.x=clamp(nx,0,MAPSZ*TILE-p.size);
- if(moved)p.walk=(p.walk||0)+0.2;
- const doShoot=keys[p.controls.shoot]||(p.id===1&&currentPlayers===1&&mDown);
- if(doShoot){
- let target=null,minD=Infinity;
- for(const z of zombies){const d=Math.hypot((p.x+p.size/2)-(z.x+z.size/2),(p.y+p.size/2)-(z.y+z.size/2));if(d<minD&&d<580){minD=d;target=z;}}
- if(target)shoot(p,target.x+target.size/2,target.y+target.size/2);
- else shoot(p,p.x+90,p.y);
- }
- }
+ // ===== Движение игрока (Сетевая версия) =====
+// Управляем только СВОИМ персонажем
+const p = players[myIdx]; 
+
+if (p && p.hp > 0) {
+    const spd = p.spd * (p.slow || 1);
+    let moved = false;
+    let nx = p.x, ny = p.y;
+
+    // Используем управление из объекта игрока, но теперь только для себя
+    if (keys[p.controls.up]) { ny -= spd; moved = true; }
+    if (keys[p.controls.down]) { ny += spd; moved = true; }
+    
+    // Проверка столкновений и перемещение по Y
+    if (!colCheck(p.x, ny, p.size)) {
+        p.y = Math.max(0, Math.min(ny, MAPSZ * TILE - p.size));
+    }
+
+    if (keys[p.controls.left]) { nx -= spd; moved = true; }
+    if (keys[p.controls.right]) { nx += spd; moved = true; }
+
+    // Проверка столкновений и перемещение по X
+    if (!colCheck(nx, p.y, p.size)) {
+        p.x = Math.max(0, Math.min(nx, MAPSZ * TILE - p.size));
+    }
+
+    if (moved) p.walk = (p.walk || 0) + 0.2;
+
+    // Логика стрельбы (только для своего игрока)
+    const doShoot = keys[p.controls.shoot] || (mDown && myIdx === 0); 
+    if (doShoot) {
+        let target = null, minD = Infinity;
+        for (const z of zombies) {
+            const d = Math.hypot((p.x + p.size / 2) - (z.x + z.size / 2), (p.y + p.size / 2) - (z.y + z.size / 2));
+            if (d < minD && d < 580) {
+                minD = d;
+                target = z;
+            }
+        }
+        if (target) shoot(p, target.x + target.size / 2, target.y + target.size / 2);
+        else shoot(p, p.x + 90, p.y);
+    }
+}
+
  // Камера
  const lv=getLiving();
  if(lv.length>0){
