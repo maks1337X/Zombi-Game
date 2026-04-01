@@ -5,20 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Лесное Месиво — Зомби Кооператив</title>
     <link rel="stylesheet" href="style.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
 </head>
 <body>
-    
-<div id="mp-ui" style="position:fixed; top:10px; left:50%; transform:translateX(-50%); z-index:1000; background:rgba(0,0,0,0.9); padding:15px; border:2px solid #468c23; border-radius:12px; color:white; font-family:sans-serif; width:320px; text-align:center;">
-    <div style="font-weight:bold; margin-bottom:10px; color:#88ff88;">🌐 СЕТЕВАЯ ИГРА (БЕЗ VPN)</div>
-    <input type="text" id="room-name" placeholder="Название комнаты (любое)" style="width:100%; background:#111; color:#fff; border:1px solid #444; padding:8px; margin-bottom:10px; border-radius:5px;">
-    
-    <div style="display:flex; gap:10px;">
-        <button onclick="startMultiplayer('host')" style="flex:1; background:#468c23; border:none; color:white; padding:10px; cursor:pointer; border-radius:5px; font-weight:bold;">СОЗДАТЬ</button>
-        <button onclick="startMultiplayer('client')" style="flex:1; background:#2c5a17; border:none; color:white; padding:10px; cursor:pointer; border-radius:5px; font-weight:bold;">ВОЙТИ</button>
-    </div>
-    <div id="net-status" style="font-size:11px; margin-top:8px; color:#aaa;">Введите одинаковое имя с другом</div>
-</div>
     <div id="ui-menu" class="overlay">
  <div style="text-align:center;width:min(880px,calc(100vw - 12px));">
  <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:2px;">
@@ -183,6 +171,7 @@
 <div id="fps-c">FPS: --</div>
 <canvas id="gc"></canvas>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
