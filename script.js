@@ -1,5 +1,11 @@
 // ===== СЕТЕВАЯ ЛОГИКА (PeerJS) =====
-const peer = new Peer(); 
+const peer = new Peer(undefined, {
+    host: '0.peerjs.com',
+    port: 443,
+    path: '/',
+    secure: true,
+    debug: 3
+});
 let conn = null;
 let isHost = false;
 
