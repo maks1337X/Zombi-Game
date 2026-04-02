@@ -52,7 +52,7 @@ const tileRnd = [];
 const keys = {};
 let mDown = false;
 let floorCache = null;
-// ====================== MQTT МУЛЬТИПЛЕЕР (обновлённый) ======================
+// ====================== MQTT МУЛЬТИПЛЕЕР (EMQX - более стабильный) ======================
 let mqttClient = null;
 let roomId = null;
 let isHost = false;
@@ -63,7 +63,7 @@ let lastInputSend = 0;
 let onlinePlayers = {};
 
 const MQTT_BROKER = "broker.emqx.io";
-const MQTT_PORT = 8084;   // Secure WebSocket порт EMQX
+const MQTT_PORT = 8084;   // WSS порт EMQX
 
 function startOnlineLobby() {
   document.getElementById('ui-menu').classList.add('hidden');
@@ -124,7 +124,7 @@ function connectMQTT() {
   
   mqttClient.connect({
     useSSL: true,
-    keepAliveInterval: 45,      // сильно увеличено
+    keepAliveInterval: 45,
     cleanSession: true,
     onSuccess: () => {
       console.log(`✅ MQTT подключён к комнате ${roomId} (EMQX WSS)`);
@@ -138,8 +138,9 @@ function connectMQTT() {
       });
     },
     onFailure: (err) => {
-      console.error("Ошибка подключения:", err);
-      setTimeout(connectMQTT, 5000);
+      console.error("Ошибка подключения к EMQX:", err);
+      alert('Не удалось подключиться к EMQX. Попробуйте создать комнату заново.');
+      closeLobby();
     }
   });
 }
@@ -150,9 +151,7 @@ function sendMQTT(payload) {
     const msg = new Paho.MQTT.Message(JSON.stringify(payload));
     msg.destinationName = `zombie/room/${roomId}/data`;
     mqttClient.send(msg);
-  } catch (e) {
-    // полностью тихо
-  }
+  } catch (e) {}
 }
 
 function handleMQTTMessage(message) {
