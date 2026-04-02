@@ -147,13 +147,16 @@ function handleMQTTMessage(message) {
     return; 
   }
 
-  // Защита от undefined
-  if (!onlinePlayers) onlinePlayers = {};
+  // ←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←
+  // ГАРАНТИРОВАННАЯ ЗАЩИТА от "onlinePlayers is not defined"
+  if (typeof onlinePlayers === 'undefined') {
+    onlinePlayers = {};   // ← должна быть с = {}
+  }
+  // ←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←
 
   if (data.type === 'join') {
     onlinePlayers[data.id] = data;
     
-    // Если мы хост и уже есть 2 игрока — запускаем игру
     if (isHost && Object.keys(onlinePlayers).length >= 2) {
       setTimeout(() => {
         if (gState !== 'PLAYING') initGame(2, true);
