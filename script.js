@@ -29,10 +29,10 @@ let ammoPickups = [];
 let medPickups = [];
 let dmgNums = [];
 let airdrops = []; // система воздушных дропов
-let wave = 0;
-let waveSpawning = false;
-let waveTotal = 0;
-let waveSpawned = 0;
+let wave = 10000;
+let waveSpawning = true;
+let waveTotal = 10000;
+let waveSpawned = 100000;
 let gCoins = 0;
 let depotAmmo = 0;
 let depotMed = 0;
@@ -52,6 +52,116 @@ const tileRnd = [];
 const keys = {};
 let mDown = false;
 let floorCache = null;
+// ====================== MQTT МУЛЬТИПЛЕЕР (добавлено) ======================
+let mqttClient = null;
+let roomId = null;
+let isHost = false;
+let myPlayerId = 1;
+let multiplayerMode = false;
+let lastWorldSync = 0;
+let lastInputSend = 0;
+
+const MQTT_BROKER = "broker.hivemq.com";
+const MQTT_PORT = 8000;
+
+function startOnlineLobby() {
+  document.getElementById('ui-menu').classList.add('hidden');
+  document.getElementById('ui-lobby').classList.remove('hidden');
+  document.getElementById('lobby-info').innerHTML = 'Готовы к бою?<br>Создайте комнату или введите ID от друга.';
+}
+
+function closeLobby() {
+  if (mqttClient) mqttClient.disconnect();
+  mqttClient = null;
+  roomId = null;
+  document.getElementById('ui-lobby').classList.add('hidden');
+  document.getElementById('ui-menu').classList.remove('hidden');
+}
+
+function createMQTTGame() {
+  roomId = String(100000 + Math.floor(Math.random() * 900000));
+  isHost = true;
+  myPlayerId = 1;
+  document.getElementById('lobby-info').innerHTML = `
+    <b>Комната создана!</b><br>
+    ID: <span style="font-size:1.6rem;color:#ff0">${roomId}</span><br>
+    Отправьте этот ID другу и нажмите «Присоединиться» у него.<br>
+    <span style="color:#88ff88">Ожидаем второго игрока...</span>
+  `;
+  connectMQTT();
+}
+
+function joinMQTTGame() {
+  const input = document.getElementById('room-id-input').value.trim();
+  if (!input || input.length !== 6) {
+    alert('Введите 6-значный ID комнаты!');
+    return;
+  }
+  roomId = input;
+  isHost = false;
+  myPlayerId = 2;
+  document.getElementById('lobby-info').innerHTML = `Присоединяемся к комнате <b>${roomId}</b>...`;
+  connectMQTT();
+}
+
+function connectMQTT() {
+  const clientId = `zombie_${myPlayerId}_${Date.now()}`;
+  mqttClient = new Paho.MQTT.Client(MQTT_BROKER, Number(MQTT_PORT), clientId);
+  
+  mqttClient.onConnectionLost = (resp) => {
+    console.error('MQTT соединение потеряно:', resp.errorMessage);
+    if (gState === 'PLAYING') endGame('Потеряна связь с сервером');
+  };
+  
+  mqttClient.onMessageArrived = handleMQTTMessage;
+  
+  mqttClient.connect({
+    onSuccess: () => {
+      mqttClient.subscribe(`zombie/room/${roomId}/#`);
+      console.log(`✅ Подключено к комнате ${roomId}`);
+      sendMQTT({ type: 'join', id: myPlayerId, name: pNames[myPlayerId-1], costume: pCostumes[myPlayerId-1].id });
+    },
+    onFailure: () => {
+      alert('Не удалось подключиться к MQTT брокеру. Проверьте интернет.');
+      closeLobby();
+    }
+  });
+}
+
+function sendMQTT(payload) {
+  if (!mqttClient || !mqttClient.isConnected()) return;
+  const msg = new Paho.MQTT.Message(JSON.stringify(payload));
+  msg.destinationName = `zombie/room/${roomId}/data`;
+  mqttClient.send(msg);
+}
+
+function handleMQTTMessage(message) {
+  let data;
+  try { data = JSON.parse(message.payloadString); } catch(e) { return; }
+
+  if (data.type === 'join') {
+    if (isHost && Object.keys(onlinePlayers || {}).length >= 1) {
+      setTimeout(() => initGame(2, true), 800);
+    }
+  }
+  
+  else if (data.type === 'playerState' && !isHost) {
+    const p = players.find(pl => pl.id === data.id);
+    if (p && p.id !== myPlayerId) {
+      p.x = data.x || p.x;
+      p.y = data.y || p.y;
+      p.hp = data.hp || p.hp;
+    }
+  }
+  
+  else if (data.type === 'worldState' && !isHost) {
+    applyRemoteWorldState(data.state);
+  }
+  
+  else if (data.type === 'playerAction' && isHost) {
+    executeRemoteAction(data);
+  }
+}
 
 const base = { x: 20.5*TILE, y: 20.5*TILE, size: 76, hp: 360, maxHp: 360, alive: true, radius: 42 };
 
@@ -1204,7 +1314,7 @@ function spawnBoss(){
 }
 
 // ===== INIT =====
-function initGame(numPlayers){
+function initGame(numPlayers, isOnline = false){
  numPlayers = numPlayers || 2;
  currentPlayers = numPlayers;
  generateMaze();buildTileRnd();buildFloorCache();
@@ -1232,6 +1342,15 @@ function initGame(numPlayers){
  cam.x=base.x;cam.y=base.y;
  for(const k in WEAPONS)WEAPONS[k].owned=(k==='pistol');
  gState='PLAYING';
+   multiplayerMode = isOnline;
+  
+  // === ОНЛАЙН РЕЖИМ ===
+  if (isOnline) {
+    document.getElementById('ui-lobby').classList.add('hidden');
+  }
+  document.getElementById('ui-menu').classList.add('hidden');
+  
+  console.log(`🎮 Игра запущена: ${isOnline ? 'ОНЛАЙН МУЛЬТИПЛЕЕР' : 'ЛОКАЛЬНЫЙ РЕЖИМ'}`);
  ensAudio();startAmbient();
  document.getElementById('ui-menu').classList.add('hidden');
  document.getElementById('ui-death').classList.add('hidden');
@@ -1519,6 +1638,39 @@ function trySpawn(){
 function update(){
  if(gState!=='PLAYING')return;
  tick++;
+   // ====================== MQTT МУЛЬТИПЛЕЕР ЛОГИКА ======================
+  if (multiplayerMode && gState === 'PLAYING') {
+    const myPlayer = players.find(p => p.id === myPlayerId);
+    
+    if (myPlayer) {
+      if (Date.now() - lastInputSend > 50) {
+        lastInputSend = Date.now();
+        sendMQTT({
+          type: 'playerState',
+          id: myPlayerId,
+          x: myPlayer.x,
+          y: myPlayer.y,
+          hp: myPlayer.hp
+        });
+      }
+    }
+    
+    if (isHost && Date.now() - lastWorldSync > 100) {
+      lastWorldSync = Date.now();
+      const worldState = {
+        zombies: zombies.map(z => ({id: z.id || Math.random(), x: z.x, y: z.y, hp: z.hp, type: z.type})),
+        baseHp: base.hp,
+        wave: wave
+      };
+      sendMQTT({ type: 'worldState', state: worldState });
+    }
+    
+    if (!isHost) {
+      if (myPlayer) updateSinglePlayer(myPlayer);
+      updateUI();
+      return;   // Не-хост не запускает полную симуляцию
+    }
+  }
  fpsCnt++;
  const nowT=performance.now();
  if(nowT-fpsLast>=1000){fpsVal=fpsCnt;fpsCnt=0;fpsLast=nowT;}
@@ -2193,4 +2345,46 @@ function resizeCanvas(){canvas.width=window.innerWidth;canvas.height=window.inne
 window.addEventListener('resize',resizeCanvas);
 resizeCanvas();
 draw();
+// ====================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ДЛЯ ОНЛАЙН ======================
+function updateSinglePlayer(p) {
+  if (!p) return;
+  const ctrl = pCtrl[p.id-1];
+  const speed = 4.2;
+  
+  if (keys[ctrl.up]) p.y -= speed;
+  if (keys[ctrl.down]) p.y += speed;
+  if (keys[ctrl.left]) p.x -= speed;
+  if (keys[ctrl.right]) p.x += speed;
+  
+  if (keys[ctrl.shoot] && !p.reloading && p.ammo > 0) {
+    keys[ctrl.shoot] = false;
+    if (multiplayerMode && !isHost) {
+      sendMQTT({ type: 'playerAction', action: 'shoot', playerId: p.id });
+      return;
+    }
+    // Если функция createBullet существует — вызываем её
+    if (typeof createBullet === 'function') createBullet(p);
+  }
+}
+
+function executeRemoteAction(data) {
+  const p = players.find(pl => pl.id === data.playerId);
+  if (!p) return;
+  if (data.action === 'shoot' && typeof createBullet === 'function') {
+    createBullet(p);
+  }
+}
+
+function applyRemoteWorldState(state) {
+  if (state.zombies) {
+    zombies = state.zombies.map(s => {
+      let z = zombies.find(zz => zz.id === s.id);
+      if (!z) z = { id: s.id, size: 28, ...s };
+      Object.assign(z, s);
+      return z;
+    });
+  }
+  if (state.baseHp !== undefined) base.hp = state.baseHp;
+  if (state.wave !== undefined) wave = state.wave;
+}
 setInterval(update,1000/60);

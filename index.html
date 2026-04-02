@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Зомби Кооператив</title>
 <link rel="stylesheet" href="style.css">
+<!-- MQTT клиент (Paho) - добавлено для онлайн-мультиплеера -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
 </head>
 <body>
 <!-- MENU -->
@@ -53,20 +55,29 @@
  <div class="cost-grid" id="cost-ui"></div>
  </div>
  </div>
+ 
+ <!-- === РЕЖИМЫ ИГРЫ (добавлен новый онлайн-режим) === -->
  <div class="mode-btns">
- <div class="mode-card" onclick="initGame(2)">
+ <div class="mode-card" onclick="initGame(2,false)">
  <div style="font-size:2.2rem;">🖥️</div>
  <h3>ЗА ОДНИМ КОМПЬЮТЕРОМ</h3>
  <p>Локальный кооп за одним компьютером. Два игрока на одной клавиатуре.</p>
  </div>
- <div class="mode-card" onclick="initGame(1)">
+ <div class="mode-card" onclick="initGame(1,false)">
  <div style="font-size:2.2rem;">🧍</div>
  <h3>ОДИНОЧНАЯ ИГРА</h3>
  <p>Играй один и мочи зомби!</p>
  </div>
+ <!-- НОВЫЙ ОНЛАЙН РЕЖИМ (добавлено) -->
+ <div class="mode-card" onclick="startOnlineLobby()">
+ <div style="font-size:2.2rem;">🌐</div>
+ <h3>ОНЛАЙН КООП (MQTT)</h3>
+ <p>Играй с другом по интернету.<br>2 игрока • Реал-тайм • Бесплатно</p>
  </div>
  </div>
- <div style="margin-top:6px;font-size:0.66rem;color:#3a6a28;letter-spacing:0.1em;">ВЕРСИЯ 8.0</div>
+ 
+ </div>
+ <div style="margin-top:6px;font-size:0.66rem;color:#3a6a28;letter-spacing:0.1em;">ВЕРСИЯ 8.1 — MQTT МУЛЬТИПЛЕЕР</div>
  </div>
 </div>
 
@@ -113,6 +124,26 @@
  <div class="shop-grid" id="shop-items"></div>
  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:9px;" id="shop-extra"></div>
  <button class="main-btn" style="background:linear-gradient(180deg,#3a3a50,#1e1e2e);width:100%;margin-top:12px;font-size:0.95rem;box-shadow:none;" onclick="toggleShop()">🔙 ВЕРНУТЬСЯ В БОЙ (B)</button>
+ </div>
+</div>
+
+<!-- === НОВЫЙ ОВЕРЛЕЙ ЛОББИ ДЛЯ ОНЛАЙН ИГРЫ (добавлено) === -->
+<div id="ui-lobby" class="overlay hidden">
+ <div class="pause-card" style="min-width:460px;max-width:520px;">
+  <h2 style="color:#ffd700;margin-bottom:20px;">🌐 ОНЛАЙН КООП (MQTT)</h2>
+  <div id="lobby-content">
+   <button onclick="createMQTTGame()" class="main-btn main-btn-g" style="width:100%;margin-bottom:16px;font-size:1.3rem;">Создать комнату</button>
+   
+   <div style="text-align:center;margin:20px 0;color:#88bb66;font-size:0.95rem;">или присоединись по ID</div>
+   
+   <input id="room-id-input" type="text" maxlength="6" placeholder="123456" style="width:100%;padding:16px 12px;font-size:1.4rem;text-align:center;background:rgba(0,0,0,0.6);border:2px solid #88bb66;border-radius:12px;color:#fff;margin-bottom:12px;letter-spacing:4px;">
+   
+   <button onclick="joinMQTTGame()" class="main-btn" style="width:100%;">Присоединиться к комнате</button>
+   
+   <div id="lobby-info" style="margin-top:24px;padding:14px;background:rgba(6,18,3,0.8);border-radius:10px;font-size:0.85rem;line-height:1.5;color:#ccff88;min-height:68px;"></div>
+  </div>
+  
+  <button onclick="closeLobby()" class="pause-btn pause-btn-gray" style="margin-top:20px;">← Назад в главное меню</button>
  </div>
 </div>
 
