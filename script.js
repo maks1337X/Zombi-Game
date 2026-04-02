@@ -109,34 +109,56 @@ function connectMQTT() {
   mqttClient = new Paho.MQTT.Client(MQTT_BROKER, Number(MQTT_PORT), clientId);
   
   mqttClient.onConnectionLost = (resp) => {
-    console.error('MQTT потеряно:', resp.errorMessage);
-    if (gState === 'PLAYING') endGame('Потеряна связь с сервером');
+    console.warn('MQTT соединение потеряно:', resp.errorMessage || resp);
+    // Не сразу заканчиваем игру, даём шанс переподключиться
+    if (gState === 'PLAYING') {
+      setTimeout(() => {
+        if (mqttClient && !mqttClient.isConnected()) {
+          console.log("Попытка переподключения...");
+          connectMQTT();
+        }
+      }, 2000);
+    }
   };
   
   mqttClient.onMessageArrived = handleMQTTMessage;
   
   mqttClient.connect({
     useSSL: true,
+    keepAliveInterval: 15,        // ← важно: отправляем пинг каждые 15 секунд
+    reconnect: true,              // ← пытаемся автоматически переподключаться
     onSuccess: () => {
-      mqttClient.subscribe(`zombie/room/${roomId}/#`);
       console.log(`✅ MQTT подключён к комнате ${roomId} (WSS)`);
-      sendMQTT({ type: 'join', id: myPlayerId, name: pNames[myPlayerId-1], costume: pCostumes[myPlayerId-1].id });
+      mqttClient.subscribe(`zombie/room/${roomId}/#`);
+      
+      // Отправляем join-сообщение
+      sendMQTT({ 
+        type: 'join', 
+        id: myPlayerId, 
+        name: pNames[myPlayerId-1] || 'Игрок ' + myPlayerId, 
+        costume: pCostumes[myPlayerId-1].id 
+      });
     },
     onFailure: (err) => {
-      console.error("Ошибка подключения MQTT:", err);
-      alert('Не удалось подключиться к MQTT-брокеру.\nВозможно, проблема с интернетом или брокером.\nПопробуйте ещё раз через 5 секунд.');
+      console.error("Ошибка подключения к MQTT:", err);
+      alert('Не удалось подключиться к серверу MQTT.\nПопробуйте создать комнату заново.');
       closeLobby();
     }
   });
 }
 
 function sendMQTT(payload) {
-  if (!mqttClient || !mqttClient.isConnected()) return;
+  if (!mqttClient || !mqttClient.isConnected()) {
+    console.warn("Попытка отправки, но MQTT не подключён");
+    return;
+  }
   try {
     const msg = new Paho.MQTT.Message(JSON.stringify(payload));
     msg.destinationName = `zombie/room/${roomId}/data`;
     mqttClient.send(msg);
-  } catch(e) {}
+  } catch (e) {
+    console.warn("Ошибка отправки MQTT сообщения:", e);
+  }
 }
 
 function handleMQTTMessage(message) {
@@ -147,38 +169,16 @@ function handleMQTTMessage(message) {
     return; 
   }
 
-  // ←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←
-  // ГАРАНТИРОВАННАЯ ЗАЩИТА от "onlinePlayers is not defined"
-  if (typeof onlinePlayers === 'undefined') {
-    onlinePlayers = {};   // ← должна быть с = {}
-  }
-  // ←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←
+  if (typeof onlinePlayers === 'undefined') onlinePlayers = {};
 
   if (data.type === 'join') {
     onlinePlayers[data.id] = data;
-    
-    if (isHost && Object.keys(onlinePlayers).length >= 2) {
-      setTimeout(() => {
-        if (gState !== 'PLAYING') initGame(2, true);
-      }, 800);
+    console.log(`Игрок ${data.id} присоединился`);
+
+    if (isHost && Object.keys(onlinePlayers).length >= 2 && gState !== 'PLAYING') {
+      console.log("✅ Два игрока в комнате. Запускаем игру...");
+      setTimeout(() => initGame(2, true), 800);
     }
-  }
-  
-  else if (data.type === 'playerState' && !isHost) {
-    const p = players.find(pl => pl.id === data.id);
-    if (p && p.id !== myPlayerId) {
-      p.x = data.x || p.x;
-      p.y = data.y || p.y;
-      p.hp = data.hp || p.hp;
-    }
-  }
-  
-  else if (data.type === 'worldState' && !isHost) {
-    applyRemoteWorldState(data.state);
-  }
-  
-  else if (data.type === 'playerAction' && isHost) {
-    executeRemoteAction(data);
   }
 }
 
