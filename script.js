@@ -62,7 +62,7 @@ let lastWorldSync = 0;
 let lastInputSend = 0;
 
 const MQTT_BROKER = "broker.hivemq.com";
-const MQTT_PORT = 8000;
+const MQTT_PORT = 8884;
 
 function startOnlineLobby() {
   document.getElementById('ui-menu').classList.add('hidden');
@@ -109,20 +109,22 @@ function connectMQTT() {
   mqttClient = new Paho.MQTT.Client(MQTT_BROKER, Number(MQTT_PORT), clientId);
   
   mqttClient.onConnectionLost = (resp) => {
-    console.error('MQTT соединение потеряно:', resp.errorMessage);
+    console.error('MQTT потеряно:', resp.errorMessage);
     if (gState === 'PLAYING') endGame('Потеряна связь с сервером');
   };
   
   mqttClient.onMessageArrived = handleMQTTMessage;
   
   mqttClient.connect({
+    useSSL: true,                    // ← обязательно для WSS
     onSuccess: () => {
       mqttClient.subscribe(`zombie/room/${roomId}/#`);
-      console.log(`✅ Подключено к комнате ${roomId}`);
+      console.log(`✅ MQTT подключён к комнате ${roomId} (WSS)`);
       sendMQTT({ type: 'join', id: myPlayerId, name: pNames[myPlayerId-1], costume: pCostumes[myPlayerId-1].id });
     },
-    onFailure: () => {
-      alert('Не удалось подключиться к MQTT брокеру. Проверьте интернет.');
+    onFailure: (err) => {
+      console.error("Ошибка подключения MQTT:", err);
+      alert('Не удалось подключиться к MQTT-брокеру.\nПроверьте интернет и попробуйте ещё раз.');
       closeLobby();
     }
   });
@@ -130,9 +132,11 @@ function connectMQTT() {
 
 function sendMQTT(payload) {
   if (!mqttClient || !mqttClient.isConnected()) return;
-  const msg = new Paho.MQTT.Message(JSON.stringify(payload));
-  msg.destinationName = `zombie/room/${roomId}/data`;
-  mqttClient.send(msg);
+  try {
+    const msg = new Paho.MQTT.Message(JSON.stringify(payload));
+    msg.destinationName = `zombie/room/${roomId}/data`;
+    mqttClient.send(msg);
+  } catch(e) {}
 }
 
 function handleMQTTMessage(message) {
