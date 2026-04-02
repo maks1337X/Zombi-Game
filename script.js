@@ -110,11 +110,12 @@ function connectMQTT() {
   
   mqttClient.onConnectionLost = (resp) => {
     console.warn('MQTT соединение потеряно:', resp.errorMessage || resp);
-    // Не сразу заканчиваем игру, даём шанс переподключиться
-    if (gState === 'PLAYING') {
+    
+    // Автоматическая попытка переподключения через 2 секунды
+    if (gState === 'PLAYING' || document.getElementById('ui-lobby').classList.contains('hidden') === false) {
       setTimeout(() => {
         if (mqttClient && !mqttClient.isConnected()) {
-          console.log("Попытка переподключения...");
+          console.log("Попытка переподключения к MQTT...");
           connectMQTT();
         }
       }, 2000);
@@ -125,23 +126,23 @@ function connectMQTT() {
   
   mqttClient.connect({
     useSSL: true,
-    keepAliveInterval: 15,        // ← важно: отправляем пинг каждые 15 секунд
-    reconnect: true,              // ← пытаемся автоматически переподключаться
+    keepAliveInterval: 20,           // Отправляем пинг каждые 20 секунд
+    cleanSession: true,
     onSuccess: () => {
       console.log(`✅ MQTT подключён к комнате ${roomId} (WSS)`);
       mqttClient.subscribe(`zombie/room/${roomId}/#`);
       
-      // Отправляем join-сообщение
+      // Отправляем сообщение о присоединении
       sendMQTT({ 
         type: 'join', 
         id: myPlayerId, 
-        name: pNames[myPlayerId-1] || 'Игрок ' + myPlayerId, 
-        costume: pCostumes[myPlayerId-1].id 
+        name: pNames[myPlayerId-1] || ('Игрок ' + myPlayerId), 
+        costume: pCostumes[myPlayerId-1] ? pCostumes[myPlayerId-1].id : 'soldier' 
       });
     },
     onFailure: (err) => {
-      console.error("Ошибка подключения к MQTT:", err);
-      alert('Не удалось подключиться к серверу MQTT.\nПопробуйте создать комнату заново.');
+      console.error("Ошибка подключения MQTT:", err);
+      alert('Не удалось подключиться к MQTT серверу.\n\nПопробуйте создать комнату заново через 5 секунд.');
       closeLobby();
     }
   });
