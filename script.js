@@ -61,8 +61,8 @@ let multiplayerMode = false;
 let lastWorldSync = 0;
 let lastInputSend = 0;
 
-const MQTT_BROKER = "broker.hivemq.com";
-const MQTT_PORT = 8884;
+const MQTT_BROKER = "test.mosquitto.org";
+const MQTT_PORT = 8081;        // WSS порт для mosquitto
 
 function startOnlineLobby() {
   document.getElementById('ui-menu').classList.add('hidden');
@@ -111,23 +111,23 @@ function connectMQTT() {
   mqttClient.onConnectionLost = (resp) => {
     console.warn('MQTT соединение потеряно:', resp.errorMessage || resp);
     
-    // Автопереподключение
+    // Более агрессивное переподключение
     setTimeout(() => {
-      if (mqttClient && !mqttClient.isConnected() && roomId) {
-        console.log("Повторное подключение к комнате " + roomId + "...");
+      if (roomId && (!mqttClient || !mqttClient.isConnected())) {
+        console.log(`Повторное подключение к комнате ${roomId}...`);
         connectMQTT();
       }
-    }, 1800);
+    }, 1500);
   };
   
   mqttClient.onMessageArrived = handleMQTTMessage;
   
   mqttClient.connect({
     useSSL: true,
-    keepAliveInterval: 30,     // увеличил до 30 секунд
+    keepAliveInterval: 40,      // увеличено
     cleanSession: true,
     onSuccess: () => {
-      console.log(`✅ MQTT подключён к комнате ${roomId} (WSS)`);
+      console.log(`✅ MQTT подключён к комнате ${roomId} (WSS - Mosquitto)`);
       mqttClient.subscribe(`zombie/room/${roomId}/#`);
       
       sendMQTT({ 
@@ -138,23 +138,20 @@ function connectMQTT() {
       });
     },
     onFailure: (err) => {
-      console.error("Ошибка подключения MQTT:", err);
-      setTimeout(connectMQTT, 3000); // повторная попытка
+      console.error("Ошибка подключения к MQTT:", err);
+      setTimeout(connectMQTT, 4000); // повтор через 4 секунды
     }
   });
 }
 
 function sendMQTT(payload) {
-  if (!mqttClient || !mqttClient.isConnected()) {
-    //console.warn("MQTT не подключён, сообщение пропущено");
-    return;
-  }
+  if (!mqttClient || !mqttClient.isConnected()) return;
   try {
     const msg = new Paho.MQTT.Message(JSON.stringify(payload));
     msg.destinationName = `zombie/room/${roomId}/data`;
     mqttClient.send(msg);
   } catch (e) {
-    //console.warn("Ошибка отправки:", e);
+    // полностью тихо
   }
 }
 
