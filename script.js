@@ -50,395 +50,6 @@ let listeningCtx = 'menu';
 const maze = [];
 const tileRnd = [];
 const keys = {};
-// ===== MULTIPLAYER MQTT =====
-let mqttClient = null;
-let netRole = null;        // 'host' или 'client'
-let netRoom = '';
-let netConnected = false;
-let myPlayerId = 1;        // хост = 1, клиент = 2
-let clientInputState = {}; // последний ввод от клиента (для хоста)
-let netStatusEl = null;
-
-const MQTT_BROKER = 'broker.hivemq.com';
-const MQTT_PORT = 8000; // WebSocket порт
-
-function showNetworkMenu() {
-  document.getElementById('menu-main').classList.add('hidden');
-  document.getElementById('net-menu').classList.remove('hidden');
-  netStatusEl = document.getElementById('net-status');
-}
-
-function hideNetworkMenu() {
-  document.getElementById('net-menu').classList.add('hidden');
-  document.getElementById('menu-main').classList.remove('hidden');
-  disconnectMQTT();
-}
-
-function setNetStatus(msg, color) {
-  if (!netStatusEl) netStatusEl = document.getElementById('net-status');
-  netStatusEl.style.color = color || '#88bb66';
-  netStatusEl.textContent = msg;
-}
-
-function connectMQTT(room, role, onConnected) {
-  const clientId = 'zombie_' + role + '_' + Math.random().toString(36).slice(2, 8);
-  mqttClient = new Paho.MQTT.Client(MQTT_BROKER, MQTT_PORT, clientId);
-
-  mqttClient.onConnectionLost = function(resp) {
-    netConnected = false;
-    setNetStatus('❌ Соединение потеряно: ' + resp.errorMessage, '#ff6666');
-  };
-
-  mqttClient.onMessageArrived = function(msg) {
-    try {
-      const data = JSON.parse(msg.payloadString);
-      handleMQTTMessage(data, msg.destinationName);
-    } catch(e) {}
-  };
-
-  setNetStatus('⏳ Подключение к серверу...', '#ffcc00');
-
-  mqttClient.connect({
-    onSuccess: function() {
-      netConnected = true;
-      netRoom = room;
-      netRole = role;
-
-      // Подписываемся на нужные топики
-      if (role === 'host') {
-        // Хост слушает ввод от клиента
-        mqttClient.subscribe('zombie/' + room + '/client_input');
-        mqttClient.subscribe('zombie/' + room + '/client_join');
-      } else {
-        // Клиент слушает состояние игры от хоста
-        mqttClient.subscribe('zombie/' + room + '/game_state');
-        mqttClient.subscribe('zombie/' + room + '/host_events');
-      }
-
-      setNetStatus('✅ Подключено!', '#44ff88');
-      if (onConnected) onConnected();
-    },
-    onFailure: function(err) {
-      netConnected = false;
-      setNetStatus('❌ Ошибка подключения: ' + err.errorMessage, '#ff6666');
-    },
-    useSSL: false,
-    timeout: 10,
-    keepAliveInterval: 30
-  });
-}
-
-function publishMQTT(topic, data) {
-  if (!mqttClient || !netConnected) return;
-  try {
-    const msg = new Paho.MQTT.Message(JSON.stringify(data));
-    msg.destinationName = 'zombie/' + netRoom + '/' + topic;
-    msg.qos = 0;
-    mqttClient.send(msg);
-  } catch(e) {}
-}
-
-function disconnectMQTT() {
-  if (mqttClient && netConnected) {
-    try { mqttClient.disconnect(); } catch(e) {}
-  }
-  mqttClient = null;
-  netConnected = false;
-  netRole = null;
-}
-
-// ===== ХОСТ ЛОГИКА =====
-function startAsHost() {
-  const room = document.getElementById('net-room').value.trim();
-  if (!room) { setNetStatus('❌ Введи код комнаты!', '#ff6666'); return; }
-
-  connectMQTT(room, 'host', function() {
-    setNetStatus('👑 Ты хост! Ждём второго игрока... Код: ' + room, '#ffcc00');
-    myPlayerId = 1;
-    currentPlayers = 2;
-
-    // Ждём join от клиента
-    // Хост сам запускает игру когда клиент подключится
-  });
-}
-
-// ===== КЛИЕНТ ЛОГИКА =====
-function startAsClient() {
-  const room = document.getElementById('net-room').value.trim();
-  if (!room) { setNetStatus('❌ Введи код комнаты!', '#ff6666'); return; }
-
-  connectMQTT(room, 'client', function() {
-    setNetStatus('🎮 Подключён как клиент! Ждём хоста...', '#88bb66');
-    myPlayerId = 2;
-    currentPlayers = 2;
-
-    // Сообщаем хосту что подключились
-    publishMQTT('client_join', { playerId: 2, name: pNames[1], costume: pCostumes[1].id });
-  });
-}
-
-// ===== ОБРАБОТКА ВХОДЯЩИХ СООБЩЕНИЙ =====
-function handleMQTTMessage(data, topic) {
-  const topicEnd = topic.split('/').pop();
-
-  if (topicEnd === 'client_join' && netRole === 'host') {
-    // Клиент подключился — запускаем игру
-    setNetStatus('✅ Игрок 2 подключился! Запускаем...', '#44ff88');
-    if (data.name) pNames[1] = data.name;
-    if (data.costume) {
-      const co = COSTUMES.find(c => c.id === data.costume);
-      if (co) pCostumes[1] = co;
-    }
-    setTimeout(() => {
-      // Скрываем меню и запускаем игру
-      document.getElementById('ui-menu').classList.add('hidden');
-      initGame(2);
-      // Запускаем рассылку состояния
-      startHostBroadcast();
-    }, 500);
-  }
-
-  else if (topicEnd === 'client_input' && netRole === 'host') {
-    // Хост получает ввод от клиента и применяет к игроку 2
-    clientInputState = data;
-    applyClientInput(data);
-  }
-
-  else if (topicEnd === 'game_state' && netRole === 'client') {
-    // Клиент получает состояние и рендерит
-    applyGameState(data);
-  }
-
-  else if (topicEnd === 'host_events' && netRole === 'client') {
-    // События: смерть, новая волна и т.д.
-    applyHostEvent(data);
-  }
-}
-
-// ===== ХОСТ: применяет ввод клиента =====
-function applyClientInput(input) {
-  const p2 = players.find(p => p.id === 2);
-  if (!p2 || p2.hp <= 0) return;
-
-  // Симулируем нажатые клавиши для игрока 2
-  // Обнуляем управление p2 и задаём напрямую через флаги
-  p2._netInput = input;
-}
-
-// ===== ХОСТ: рассылка состояния =====
-let hostBroadcastInterval = null;
-
-function startHostBroadcast() {
-  if (hostBroadcastInterval) clearInterval(hostBroadcastInterval);
-  hostBroadcastInterval = setInterval(() => {
-    if (!netConnected || netRole !== 'host' || gState === 'MENU') return;
-    publishGameState();
-  }, 50); // 20 раз в секунду
-}
-
-function stopHostBroadcast() {
-  if (hostBroadcastInterval) { clearInterval(hostBroadcastInterval); hostBroadcastInterval = null; }
-}
-
-function publishGameState() {
-  const state = {
-    // Игроки
-    players: players.map(p => ({
-      id: p.id, x: Math.round(p.x), y: Math.round(p.y),
-      hp: Math.round(p.hp), maxHp: p.maxHp,
-      weapon: p.weapon, ammo: p.ammo, reserve: p.reserve,
-      reloading: p.reloading, mines: p.mines, barrels: p.barrels,
-      frozen: p.frozen, walk: Math.round(p.walk * 10) / 10,
-      carryAmmo: p.carryAmmo, carryMed: p.carryMed,
-      costume: p.costume ? p.costume.id : 'soldier',
-      name: p.name, color: p.color,
-      stText: p.stText, stUntil: p.stUntil
-    })),
-    // Зомби (сжато)
-    zombies: zombies.map(z => ({
-      x: Math.round(z.x), y: Math.round(z.y),
-      hp: Math.round(z.hp), maxHp: z.maxHp,
-      type: z.type, size: z.size, wOff: Math.round(z.wOff * 100) / 100
-    })),
-    // Пули
-    bullets: bullets.map(b => ({ x: Math.round(b.x), y: Math.round(b.y), vx: b.vx, vy: b.vy })),
-    // Монеты
-    coins: droppedCoins.slice(0, 30).map(c => ({ x: Math.round(c.x), y: Math.round(c.y), val: c.val })),
-    // Аптечки/патроны
-    ammoPickups: ammoPickups.map(a => ({ x: Math.round(a.x), y: Math.round(a.y) })),
-    medPickups: medPickups.map(m => ({ x: Math.round(m.x), y: Math.round(m.y) })),
-    // Мины и бочки
-    mines: mines.map(m => ({ x: Math.round(m.x), y: Math.round(m.y) })),
-    barrels: barrels.map(b => ({ x: Math.round(b.x), y: Math.round(b.y), hp: b.hp, maxHp: b.maxHp })),
-    // Снаряды босса
-    bossProj: bossProj.map(bp => ({ x: Math.round(bp.x), y: Math.round(bp.y), type: bp.type })),
-    // Яды
-    poisonPools: poisonPools.map(p => ({ x: Math.round(p.x), y: Math.round(p.y), timer: p.timer })),
-    // Общее
-    gCoins: gCoins, wave: wave, gState: gState,
-    base: { hp: Math.round(base.hp), maxHp: base.maxHp, alive: base.alive },
-    depotAmmo: depotAmmo, depotMed: depotMed,
-    tick: tick,
-    // Дроп
-    airdrop: airdropPlane ? { phase: airdropPlane.phase, x: Math.round(airdropPlane.x), y: Math.round(airdropPlane.y), type: airdropPlane.type, containerX: airdropPlane.containerX ? Math.round(airdropPlane.containerX) : null, containerY: airdropPlane.containerY ? Math.round(airdropPlane.containerY) : null } : null,
-    dmgNums: dmgNums.slice(0, 20).map(d => ({ x: Math.round(d.x), y: Math.round(d.y), val: d.val, life: d.life, max: d.max, crit: d.crit, isPlayer: d.isPlayer }))
-  };
-  publishMQTT('game_state', state);
-}
-
-// ===== КЛИЕНТ: применяет состояние =====
-function applyGameState(state) {
-  if (!state) return;
-
-  // Синхронизируем игроков
-  if (state.players) {
-    state.players.forEach(sp => {
-      let p = players.find(pl => pl.id === sp.id);
-      if (!p) return;
-
-      // Позицию игрока 1 берём от хоста полностью
-      // Позицию игрока 2 (себя) — только если разница большая (коррекция)
-      if (sp.id === 1) {
-        p.x = sp.x; p.y = sp.y;
-      } else {
-        // Мягкая коррекция позиции клиента
-        const dx = sp.x - p.x, dy = sp.y - p.y;
-        if (Math.hypot(dx, dy) > 40) { p.x = sp.x; p.y = sp.y; }
-        else { p.x += dx * 0.3; p.y += dy * 0.3; }
-      }
-
-      p.hp = sp.hp; p.maxHp = sp.maxHp;
-      p.weapon = sp.weapon; p.ammo = sp.ammo; p.reserve = sp.reserve;
-      p.reloading = sp.reloading; p.mines = sp.mines; p.barrels = sp.barrels;
-      p.frozen = sp.frozen; p.walk = sp.walk;
-      p.carryAmmo = sp.carryAmmo; p.carryMed = sp.carryMed;
-      p.name = sp.name; p.color = sp.color;
-      p.stText = sp.stText; p.stUntil = sp.stUntil;
-      if (sp.costume) {
-        const co = COSTUMES.find(c => c.id === sp.costume);
-        if (co) p.costume = co;
-      }
-    });
-  }
-
-  // Зомби
-  if (state.zombies) {
-    // Обновляем существующих или пересоздаём
-    if (Math.abs(zombies.length - state.zombies.length) > 3 || zombies.length === 0) {
-      zombies = state.zombies.map(sz => ({
-        x: sz.x, y: sz.y, hp: sz.hp, maxHp: sz.maxHp,
-        type: sz.type, size: sz.size, wOff: sz.wOff,
-        spd: 0, lastLeap: 0, leaping: false, leapVx: 0, leapVy: 0,
-        lastSpit: 0, rew: 1, stuckT: 0, lastX: sz.x, lastY: sz.y,
-        aggroTimer: 0
-      }));
-    } else {
-      state.zombies.forEach((sz, i) => {
-        if (zombies[i]) {
-          zombies[i].x += (sz.x - zombies[i].x) * 0.5;
-          zombies[i].y += (sz.y - zombies[i].y) * 0.5;
-          zombies[i].hp = sz.hp;
-          zombies[i].wOff = sz.wOff;
-        }
-      });
-      zombies.length = state.zombies.length;
-    }
-  }
-
-  // Пули (просто перезаписываем)
-  if (state.bullets) {
-    bullets = state.bullets.map(b => ({ x: b.x, y: b.y, vx: b.vx, vy: b.vy, dmg: 0, owner: 0 }));
-  }
-
-  // Монеты
-  if (state.coins) {
-    droppedCoins = state.coins.map(c => ({ x: c.x, y: c.y, val: c.val, hover: 0 }));
-  }
-
-  // Аптечки/патроны
-  if (state.ammoPickups) ammoPickups = state.ammoPickups.map(a => ({ x: a.x, y: a.y, bob: 0 }));
-  if (state.medPickups) medPickups = state.medPickups.map(m => ({ x: m.x, y: m.y, bob: 0 }));
-
-  // Мины/бочки
-  if (state.mines) mines = state.mines.map(m => ({ x: m.x, y: m.y, timer: 0 }));
-  if (state.barrels) barrels = state.barrels.map(b => ({ x: b.x, y: b.y, hp: b.hp, maxHp: b.maxHp }));
-
-  // Снаряды
-  if (state.bossProj) bossProj = state.bossProj.map(bp => ({ x: bp.x, y: bp.y, vx: 0, vy: 0, type: bp.type, dmg: 0 }));
-
-  // Яды
-  if (state.poisonPools) poisonPools = state.poisonPools.map(p => ({ x: p.x, y: p.y, timer: p.timer }));
-
-  // Общее состояние
-  gCoins = state.gCoins;
-  wave = state.wave;
-  depotAmmo = state.depotAmmo;
-  depotMed = state.depotMed;
-  tick = state.tick;
-
-  if (state.base) {
-    base.hp = state.base.hp;
-    base.maxHp = state.base.maxHp;
-    base.alive = state.base.alive;
-  }
-
-  // Аирдроп
-  if (state.airdrop) {
-    if (!airdropPlane) airdropPlane = { x: state.airdrop.x, y: state.airdrop.y, type: state.airdrop.type, phase: state.airdrop.phase, containerX: state.airdrop.containerX, containerY: state.airdrop.containerY, containerVY: 0, speed: 5, dropped: true, containerLanded: false, landTimer: 60, zombieDropped: false, targetX: state.airdrop.containerX, targetY: state.airdrop.containerY };
-    else {
-      airdropPlane.x = state.airdrop.x;
-      airdropPlane.phase = state.airdrop.phase;
-      airdropPlane.containerX = state.airdrop.containerX;
-      airdropPlane.containerY = state.airdrop.containerY;
-    }
-  } else {
-    airdropPlane = null;
-  }
-
-  // Цифры урона
-  if (state.dmgNums) {
-    state.dmgNums.forEach(d => {
-      if (!dmgNums.find(dn => Math.abs(dn.x - d.x) < 5 && Math.abs(dn.y - d.y) < 5 && dn.val === d.val)) {
-        dmgNums.push({ x: d.x, y: d.y, val: d.val, life: d.life, max: d.max, crit: d.crit, isPlayer: d.isPlayer });
-      }
-    });
-  }
-
-  // Применяем состояние игры
-  if (state.gState && state.gState !== gState) {
-    if (state.gState === 'DEAD') {
-      endGame('');
-    }
-  }
-
-  updateUI();
-  updateBaseUI();
-}
-
-function applyHostEvent(event) {
-  if (!event) return;
-  if (event.type === 'wave_start') {
-    showWaveAnn('🌲 ВОЛНА ' + event.wave);
-  }
-  if (event.type === 'airdrop') {
-    const ann = document.getElementById('airdrop-ann');
-    ann.innerHTML = event.html || '';
-    ann.classList.add('show');
-    setTimeout(() => ann.classList.remove('show'), 3500);
-  }
-  if (event.type === 'sound') {
-    // Воспроизводим звук на клиенте
-    if (event.snd === 'shoot') sndShoot(event.wk);
-    if (event.snd === 'pickup') sndPickup();
-    if (event.snd === 'heal') sndHeal();
-    if (event.snd === 'reload') sndReload();
-    if (event.snd === 'mine') sndMineExplode();
-    if (event.snd === 'wave') sndWaveAlert();
-    if (event.snd === 'playerhit') sndPlayerHit();
-    if (event.snd === 'basehit') sndBaseHit();
-  }
-}
-
 let mDown = false;
 let floorCache = null;
 
@@ -600,14 +211,6 @@ function buildCostUI() {
      nameSpan.textContent=co.name.substring(0,4);
      nameSpan.style.cssText='font-size:0.42rem;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,0.9);font-weight:700;margin-top:1px;';
      opt.appendChild(nameSpan);
-     
-     // Галочка если выбран
-     if(pCostumes[pi].id===co.id){
-       const check=document.createElement('div');
-       check.style.cssText='position:absolute;top:1px;right:2px;color:#ffcc00;font-size:0.55rem;font-weight:900;';
-       check.textContent='✓';
-       opt.appendChild(check);
-     }
      
      opt.onclick=()=>{
        pCostumes[pi]=co;
@@ -1001,45 +604,35 @@ function playTone(type,freq,endFreq,gain,dur,filtType,filtFreq){
  }catch(e){}
 }
 function sndShoot(wk){
-   if(netRole === 'host') publishMQTT('host_events', { type: 'sound', snd: 'shoot', wk: wk });
-  // ... остальной код без изменений
  ensAudio();if(!audioCtx)return;
  const p={pistol:[300,110,0.065,0.09],smg:[430,160,0.044,0.05],shotgun:[170,60,0.11,0.12],rifle:[540,200,0.075,0.08],minigun:[370,140,0.03,0.035]}[wk]||[300,110,0.065,0.09];
  playTone('square',p[0],p[1],p[2],p[3],'lowpass',2600);
 }
 function sndMineExplode(){
-   if(netRole === 'host') publishMQTT('host_events', { type: 'sound', snd: 'mine' });
  ensAudio();if(!audioCtx)return;
  playTone('sine',130,28,0.28,0.55,'lowpass',400);
  setTimeout(()=>playTone('sawtooth',700,90,0.12,0.28),30);
  setTimeout(()=>playTone('triangle',440,80,0.08,0.2),60);
 }
 function sndReload(){
-  if(netRole === 'host') publishMQTT('host_events', { type: 'sound', snd: 'reload' });
  ensAudio();if(!audioCtx)return;
  [0,0.1,0.22].forEach((d,i)=>{setTimeout(()=>playTone('square',i===2?750:480,180,0.055,0.05),d*1000);});
 }
 function sndHeal(){
-  if(netRole === 'host') publishMQTT('host_events', { type: 'sound', snd: 'heal' });
  ensAudio();if(!audioCtx)return;
  [440,660,880].forEach((f,i)=>setTimeout(()=>playTone('sine',f,f*0.98,0.044,0.14),i*90));
 }
 function sndPickup(){
-   if(netRole === 'host') publishMQTT('host_events', { type: 'sound', snd: 'pickup' });
  ensAudio();if(!audioCtx)return;
  playTone('triangle',520,620,0.04,0.12);
 }
-function sndBaseHit(){
-  if(netRole === 'host') publishMQTT('host_events', { type: 'sound', snd: 'basehit' });
-  playTone('sawtooth',85,38,0.055,0.18,'lowpass',380);}
+function sndBaseHit(){playTone('sawtooth',85,38,0.055,0.18,'lowpass',380);}
 function sndZombieHit(){playTone('sawtooth',130+Math.random()*40,50,0.022,0.13,'bandpass',260+Math.random()*80);}
 function sndBarrelBreak(){
  ensAudio();if(!audioCtx)return;
  [0,0.06,0.14].forEach(d=>setTimeout(()=>playTone('sawtooth',320+Math.random()*180,75,0.055,0.08),d*1000));
 }
-function sndPlayerHit(){
-  if(netRole === 'host') publishMQTT('host_events', { type: 'sound', snd: 'playerhit' });
-  playTone('triangle',380,140,0.06,0.1,'lowpass',900);}
+function sndPlayerHit(){playTone('triangle',380,140,0.06,0.1,'lowpass',900);}
 function sndWaveAlert(){
  ensAudio();if(!audioCtx)return;
  playTone('sawtooth',40,180,0.18,1.4,'lowpass',500);
@@ -1151,19 +744,21 @@ function spawnInitSupplies(){ammoPickups=[];medPickups=[];for(let i=0;i<5;i++)sp
 // ===== AIRDROP SYSTEM =====
 // Типы дропов: 'bomb','heal','coins','zombie_drop'
 let airdropPlane = null; // {x, y, targetX, targetY, type, speed, phase, parachute, land}
+let fartFogTimer = 0;
 
 function triggerAirdrop(){
  // Рандомный тип
- const types = ['bomb','heal','coins','zombie_drop'];
+ const types = ['bomb','heal','coins','zombie_drop','ration','fart'];
  const type = types[Math.floor(Math.random()*types.length)];
  // Самолёт летит сверху экрана слева направо, скидывает над базой
- const startX = -200;
- const startY = base.y - 600;
- const targetX = base.x + (Math.random()-0.5)*200;
- const targetY = base.y + (Math.random()-0.5)*100;
- airdropPlane = {
- x: startX,
- y: base.y - 500,
+ const flyOffset = 140 + Math.random()*80;
+const startX = -200;
+const startY = base.y - flyOffset;
+const targetX = base.x + (Math.random()-0.5)*160;
+const targetY = base.y + (Math.random()-0.5)*80;
+airdropPlane = {
+x: startX,
+y: base.y - flyOffset,
  targetX: targetX,
  targetY: targetY,
  type: type,
@@ -1290,6 +885,27 @@ function executeDrop(ap){
  }
  showAirdropResult('☠ 5 ЗОМБИ ДЕСАНТИРОВАНЫ!','#ff8800');
  break;
+ case 'ration':
+// Сух-паёк: 2 пачки патронов + 2 аптечки на склад
+depotAmmo += 2;
+depotMed += 2;
+sndPickup();
+setTimeout(()=>sndHeal(),200);
+updateDepotUI();
+updateUI();
+showAirdropResult('🍱 СУХ-ПАЁК! +2 патрона и +2 аптечки на склад!','#88ff44');
+break;
+case 'fart':
+// Пук с воздуха — затуманивает экран на 3 секунды!
+fartFogTimer = 180;
+ensAudio();
+if(audioCtx){
+playTone('sawtooth',50,22,0.22,1.0,'lowpass',160);
+setTimeout(()=>playTone('square',120,40,0.08,0.4,'lowpass',300),200);
+setTimeout(()=>playTone('sawtooth',80,15,0.12,0.8,'lowpass',120),500);
+}
+showAirdropResult('💨 ПУК С ВОЗДУХА! 💨<br>Кто-то навалил с самолёта!','#55ff00');
+break;
  }
 }
 
@@ -1301,67 +917,199 @@ function showAirdropResult(text, color){
 }
 
 function drawAirdrop(){
- if(!airdropPlane)return;
- const ap = airdropPlane;
- const isEnemy = ap.type === 'zombie_drop';
- ctx.save();
- // Рисуем самолёт
- const px = ap.x, py = ap.y;
- ctx.fillStyle = isEnemy ? '#5a2a2a' : '#3a5a3a';
- ctx.save();
- ctx.translate(px, py);
- // Корпус
- ctx.fillStyle = isEnemy ? '#8b3030' : '#4a7a4a';
- ctx.beginPath();ctx.ellipse(0,0,40,12,0,0,Math.PI*2);ctx.fill();
- // Крылья
- ctx.fillStyle = isEnemy ? '#6b2020' : '#3a6a3a';
- ctx.beginPath();ctx.moveTo(-10,-12);ctx.lineTo(20,-12);ctx.lineTo(15,0);ctx.lineTo(-10,0);ctx.closePath();ctx.fill();
- ctx.beginPath();ctx.moveTo(-10,12);ctx.lineTo(15,12);ctx.lineTo(15,0);ctx.lineTo(-10,0);ctx.closePath();ctx.fill();
- // Хвост
- ctx.fillStyle = isEnemy ? '#6b2020' : '#3a6a3a';
- ctx.fillRect(-40,-8,12,16);
- ctx.beginPath();ctx.moveTo(-40,-8);ctx.lineTo(-55,-20);ctx.lineTo(-40,-8);ctx.closePath();ctx.fill();
- // Признак "гнилого" самолёта
- if(isEnemy){
- ctx.strokeStyle='rgba(255,100,0,0.6)';ctx.lineWidth=2;
- ctx.beginPath();ctx.moveTo(-15,-6);ctx.lineTo(-5,6);ctx.stroke();
- ctx.beginPath();ctx.moveTo(-5,-6);ctx.lineTo(-15,6);ctx.stroke();
- }
- ctx.restore();
- // Рисуем контейнер на парашюте
- if(ap.phase === 'dropping' || ap.phase === 'landed'){
- const cx2 = ap.containerX;
- const cy2 = ap.containerY;
- // Парашют
- ctx.fillStyle = isEnemy ? 'rgba(200,50,50,0.7)' : 'rgba(50,200,100,0.7)';
- ctx.beginPath();ctx.arc(cx2,cy2-30,24,Math.PI,2*Math.PI);ctx.fill();
- // Верёвки парашюта
- ctx.strokeStyle = '#888';ctx.lineWidth=1;
- ctx.beginPath();ctx.moveTo(cx2-22,cy2-16);ctx.lineTo(cx2-8,cy2);ctx.stroke();
- ctx.beginPath();ctx.moveTo(cx2+22,cy2-16);ctx.lineTo(cx2+8,cy2);ctx.stroke();
- ctx.beginPath();ctx.moveTo(cx2,cy2-6);ctx.lineTo(cx2,cy2);ctx.stroke();
- // Ящик
- ctx.fillStyle = isEnemy ? '#6b2020' : '#5a4a20';
- ctx.fillRect(cx2-12,cy2-4,24,20);
- ctx.strokeStyle = '#888';ctx.lineWidth=2;ctx.strokeRect(cx2-12,cy2-4,24,20);
- // Крест/знак
- if(isEnemy){
- ctx.fillStyle='#ff4444';ctx.font='bold 14px sans-serif';ctx.textAlign='center';
- ctx.fillText('☠',cx2,cy2+12);
- } else {
- ctx.fillStyle='#ffdd00';ctx.font='bold 12px sans-serif';ctx.textAlign='center';
- ctx.fillText(ap.type==='heal'?'💊':ap.type==='coins'?'💰':'?',cx2,cy2+12);
- }
- }
- ctx.restore();
+if(!airdropPlane)return;
+const ap=airdropPlane;
+const isEnemy=ap.type==='zombie_drop';
+const isFart=ap.type==='fart';
+const isRation=ap.type==='ration';
+ctx.save();
+
+// ====== КРАСИВЫЙ САМОЛЁТ (вид сверху, летит вправо) ======
+ctx.save();
+ctx.translate(ap.x,ap.y);
+
+// Тень самолёта на уровне земли
+ctx.save();
+ctx.globalAlpha=0.12;
+ctx.fillStyle='#000';
+ctx.beginPath();
+ctx.ellipse(30,480,50,10,0,0,Math.PI*2);
+ctx.fill();
+ctx.restore();
+
+// --- Корпус (фюзеляж) ---
+const bc1=isEnemy?'#b04040':isFart?'#55bb33':'#7a9a6a';
+const bc2=isEnemy?'#6a2020':isFart?'#337722':'#4a6a3a';
+const bGrad=ctx.createLinearGradient(0,-15,0,15);
+bGrad.addColorStop(0,bc1);bGrad.addColorStop(1,bc2);
+ctx.fillStyle=bGrad;
+ctx.beginPath();ctx.ellipse(0,0,56,14,0,0,Math.PI*2);ctx.fill();
+ctx.strokeStyle='rgba(255,255,255,0.18)';ctx.lineWidth=1;ctx.stroke();
+
+// Нос
+ctx.fillStyle=isEnemy?'#cc5555':isFart?'#66dd44':'#8aaa7a';
+ctx.beginPath();ctx.moveTo(56,0);ctx.quadraticCurveTo(74,-3,74,0);ctx.quadraticCurveTo(74,3,56,0);ctx.fill();
+
+// Кабина пилота
+ctx.fillStyle='rgba(120,220,255,0.55)';
+ctx.beginPath();ctx.ellipse(46,-3,10,6,0.08,Math.PI,2*Math.PI);ctx.fill();
+ctx.strokeStyle='rgba(200,240,255,0.35)';ctx.lineWidth=1;ctx.stroke();
+ctx.fillStyle='rgba(255,255,255,0.28)';
+ctx.beginPath();ctx.ellipse(48,-6,4,2,-0.3,0,Math.PI*2);ctx.fill();
+
+// Окна (иллюминаторы)
+ctx.fillStyle='rgba(150,220,255,0.4)';
+for(let wi=0;wi<7;wi++){ctx.beginPath();ctx.arc(28-wi*8,-6,2.5,0,Math.PI*2);ctx.fill();}
+
+// --- Крылья ---
+const wc1=isEnemy?'#884444':isFart?'#4a9932':'#5a7a4a';
+const wc2=isEnemy?'#662222':isFart?'#337722':'#3a5a2a';
+// Левое крыло
+let wg=ctx.createLinearGradient(0,-10,0,-52);wg.addColorStop(0,wc1);wg.addColorStop(1,wc2);
+ctx.fillStyle=wg;
+ctx.beginPath();ctx.moveTo(20,-11);ctx.lineTo(-6,-50);ctx.lineTo(-20,-46);ctx.lineTo(4,-11);ctx.closePath();ctx.fill();
+ctx.strokeStyle='rgba(0,0,0,0.18)';ctx.lineWidth=1;ctx.stroke();
+// Правое крыло
+wg=ctx.createLinearGradient(0,10,0,52);wg.addColorStop(0,wc1);wg.addColorStop(1,wc2);
+ctx.fillStyle=wg;
+ctx.beginPath();ctx.moveTo(20,11);ctx.lineTo(-6,50);ctx.lineTo(-20,46);ctx.lineTo(4,11);ctx.closePath();ctx.fill();
+ctx.strokeStyle='rgba(0,0,0,0.18)';ctx.lineWidth=1;ctx.stroke();
+
+// Законцовки крыльев (антикрылья)
+ctx.fillStyle=isEnemy?'#ff6644':isFart?'#88ff55':'#aaccaa';
+ctx.fillRect(-21,-50,4,8);ctx.fillRect(-21,42,4,8);
+
+// --- Двигатели ---
+ctx.fillStyle='#555';
+ctx.beginPath();ctx.ellipse(8,-30,9,5,0.15,0,Math.PI*2);ctx.fill();
+ctx.strokeStyle='#333';ctx.lineWidth=1;ctx.stroke();
+ctx.beginPath();ctx.ellipse(8,30,9,5,-0.15,0,Math.PI*2);ctx.fill();ctx.stroke();
+// Воздухозаборники
+ctx.fillStyle='#333';
+ctx.beginPath();ctx.ellipse(16,-30,3,4,0,0,Math.PI*2);ctx.fill();
+ctx.beginPath();ctx.ellipse(16,30,3,4,0,0,Math.PI*2);ctx.fill();
+
+// Пропеллеры (вращаются)
+const propA=(Date.now()*0.035)%(Math.PI*2);
+ctx.strokeStyle='#ccc';ctx.lineWidth=2;
+[{x:8,y:-30},{x:8,y:30}].forEach(eng=>{
+ctx.save();ctx.translate(eng.x+9,eng.y);ctx.rotate(propA);
+ctx.beginPath();ctx.moveTo(-9,0);ctx.lineTo(9,0);ctx.stroke();
+ctx.beginPath();ctx.moveTo(0,-9);ctx.lineTo(0,9);ctx.stroke();
+// Центр пропеллера
+ctx.fillStyle='#888';ctx.beginPath();ctx.arc(0,0,2,0,Math.PI*2);ctx.fill();
+ctx.restore();
+});
+
+// --- Хвостовое оперение ---
+const tc=isEnemy?'#773333':isFart?'#448822':'#4a6a3a';
+ctx.fillStyle=tc;
+// Вертикальный стабилизатор
+ctx.beginPath();ctx.moveTo(-46,-4);ctx.lineTo(-64,-24);ctx.lineTo(-58,-22);ctx.lineTo(-44,-4);ctx.closePath();ctx.fill();
+// Горизонтальные
+ctx.beginPath();ctx.moveTo(-44,-2);ctx.lineTo(-60,-16);ctx.lineTo(-56,-13);ctx.lineTo(-42,0);ctx.closePath();ctx.fill();
+ctx.beginPath();ctx.moveTo(-44,2);ctx.lineTo(-60,16);ctx.lineTo(-56,13);ctx.lineTo(-42,0);ctx.closePath();ctx.fill();
+
+// --- Маркировка ---
+if(isEnemy){
+ctx.strokeStyle='rgba(255,100,0,0.7)';ctx.lineWidth=2.5;
+ctx.beginPath();ctx.moveTo(-8,-7);ctx.lineTo(2,7);ctx.stroke();
+ctx.beginPath();ctx.moveTo(2,-7);ctx.lineTo(-8,7);ctx.stroke();
+ctx.fillStyle='rgba(255,0,0,0.6)';ctx.font='bold 11px sans-serif';ctx.textAlign='center';
+ctx.fillText('☠',16,5);
+} else if(isFart){
+// Зелёные облачка выхлопа
+ctx.fillStyle='rgba(100,255,50,0.3)';
+for(let ci=0;ci<5;ci++){const co=Math.sin(Date.now()/220+ci*1.7)*5;
+ctx.beginPath();ctx.arc(-60-ci*11+co,ci*5-8,6+ci*2,0,Math.PI*2);ctx.fill();}
+} else {
+// Звезда
+ctx.fillStyle='rgba(255,255,255,0.35)';ctx.beginPath();
+for(let si=0;si<5;si++){const a1=-Math.PI/2+si*Math.PI*2/5,a2=a1+Math.PI/5;
+ctx.lineTo(12+Math.cos(a1)*7,Math.sin(a1)*7);ctx.lineTo(12+Math.cos(a2)*3,Math.sin(a2)*3);}
+ctx.closePath();ctx.fill();
+}
+// Полоска
+ctx.strokeStyle=isEnemy?'rgba(255,60,60,0.35)':'rgba(255,255,255,0.15)';
+ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-34,0);ctx.lineTo(34,0);ctx.stroke();
+// Выхлоп
+ctx.fillStyle=isEnemy?'rgba(255,80,0,0.2)':'rgba(180,200,255,0.12)';
+ctx.beginPath();ctx.ellipse(-58,0,14,6,0,0,Math.PI*2);ctx.fill();
+
+ctx.restore(); // конец трансформации самолёта
+
+// ====== КОНТЕЙНЕР НА ПАРАШЮТЕ ======
+if(ap.phase==='dropping'||ap.phase==='landed'){
+const cx2=ap.containerX,cy2=ap.containerY;
+const landed=ap.phase==='landed';
+
+// Тень ящика
+ctx.fillStyle='rgba(0,0,0,0.18)';
+ctx.beginPath();ctx.ellipse(cx2,ap.targetY+18,18,5,0,0,Math.PI*2);ctx.fill();
+
+// Парашют (если в воздухе)
+if(!landed){
+const pR=32,pY=cy2-38,nP=8;
+const pCols=isEnemy
+?['#dd4444','#bb3333','#dd4444','#bb3333','#dd4444','#bb3333','#dd4444','#bb3333']
+:isFart
+?['#44cc22','#66dd44','#44cc22','#66dd44','#44cc22','#66dd44','#44cc22','#66dd44']
+:['#ff9944','#ffbb55','#44bb44','#ffbb55','#ff9944','#44bb44','#ffbb55','#ff9944'];
+// Купол
+for(let pi=0;pi<nP;pi++){
+const a1=Math.PI+(pi/nP)*Math.PI,a2=Math.PI+((pi+1)/nP)*Math.PI;
+ctx.fillStyle=pCols[pi%pCols.length];
+ctx.beginPath();ctx.moveTo(cx2,pY+7);ctx.arc(cx2,pY,pR,a1,a2);ctx.closePath();ctx.fill();
+}
+// Блик
+ctx.fillStyle='rgba(255,255,255,0.2)';
+ctx.beginPath();ctx.ellipse(cx2-7,pY-5,11,7,-0.3,0,Math.PI*2);ctx.fill();
+// Обводка
+ctx.strokeStyle='rgba(0,0,0,0.25)';ctx.lineWidth=1.5;
+ctx.beginPath();ctx.arc(cx2,pY,pR,Math.PI,2*Math.PI);ctx.stroke();
+// Стропы
+ctx.strokeStyle='#998877';ctx.lineWidth=0.8;
+for(let si=0;si<=nP;si++){const sa=Math.PI+(si/nP)*Math.PI;
+ctx.beginPath();ctx.moveTo(cx2+Math.cos(sa)*pR,pY+Math.sin(sa)*pR);ctx.lineTo(cx2,cy2-4);ctx.stroke();}
+}
+
+// Ящик
+const bw=28,bh=22,bx=cx2-bw/2,by=cy2-bh/2+2;
+const bxG=ctx.createLinearGradient(bx,by,bx,by+bh);
+if(isEnemy){bxG.addColorStop(0,'#993333');bxG.addColorStop(1,'#662222');}
+else if(isRation){bxG.addColorStop(0,'#6a8a4a');bxG.addColorStop(1,'#4a6a3a');}
+else if(isFart){bxG.addColorStop(0,'#55bb33');bxG.addColorStop(1,'#338822');}
+else{bxG.addColorStop(0,'#9a8a50');bxG.addColorStop(1,'#6a5a30');}
+ctx.fillStyle=bxG;ctx.fillRect(bx,by,bw,bh);
+// Обводка ящика
+ctx.strokeStyle=isEnemy?'#ff5544':'#bbaa66';ctx.lineWidth=2;ctx.strokeRect(bx,by,bw,bh);
+// Ремни
+ctx.strokeStyle=isEnemy?'#aa3333':'#887744';ctx.lineWidth=1.5;
+ctx.beginPath();ctx.moveTo(bx,cy2+2);ctx.lineTo(bx+bw,cy2+2);ctx.stroke();
+ctx.beginPath();ctx.moveTo(cx2,by);ctx.lineTo(cx2,by+bh);ctx.stroke();
+// Замочек
+ctx.fillStyle='#c8a040';ctx.beginPath();ctx.arc(cx2,cy2+2,2.5,0,Math.PI*2);ctx.fill();
+// Значок
+ctx.textAlign='center';ctx.font='bold 13px sans-serif';
+if(isEnemy){ctx.fillStyle='#ff4444';ctx.fillText('☠',cx2,cy2-2);}
+else if(ap.type==='heal'){ctx.fillStyle='#ff3333';ctx.fillText('✚',cx2,cy2-2);}
+else if(ap.type==='coins'){ctx.fillStyle='#ffd700';ctx.fillText('$',cx2,cy2-2);}
+else if(ap.type==='bomb'){ctx.fillStyle='#ff6600';ctx.fillText('!',cx2,cy2-2);}
+else if(isRation){ctx.fillStyle='#ffee88';ctx.font='11px sans-serif';ctx.fillText('П',cx2,cy2-1);}
+else if(isFart){ctx.fillStyle='#88ff44';ctx.fillText('?',cx2,cy2-2);}
+else{ctx.fillStyle='#ffdd00';ctx.fillText('?',cx2,cy2-2);}
+
+// Свечение при приземлении
+if(landed){
+const ga=0.15+Math.sin(Date.now()/200)*0.08;
+const gc=isEnemy?'rgba(255,50,50,':isFart?'rgba(50,255,50,':'rgba(255,200,50,';
+ctx.fillStyle=gc+ga+')';ctx.beginPath();ctx.arc(cx2,cy2+5,30,0,Math.PI*2);ctx.fill();
+}
+}
+ctx.restore();
 }
 // ===== WAVES =====
 function showWaveAnn(txt){
-  // Хост рассылает событие клиенту
-  if(netRole === 'host') {
-    publishMQTT('host_events', { type: 'wave_start', wave: wave });
-  }
-  // ... остальной код без изменений
  const el=document.getElementById('wave-ann');
  el.innerHTML=txt;el.classList.add('show');
  setTimeout(()=>el.classList.remove('show'),2600);
@@ -1477,19 +1225,13 @@ function initGame(numPlayers){
  );
  }
  zombies=[];bullets=[];droppedCoins=[];bossProj=[];mines=[];barrels=[];poisonPools=[];tpQueue=[];dmgNums=[];airdrops=[];airdropPlane=null;
- wave=0;gCoins=0;tick=0;lastTP=0;ammoCD=0;medCD=0;
+ wave=0;gCoins=0;tick=0;lastTP=0;ammoCD=0;medCD=0;fartFogTimer=0;
  waveSpawning=false;waveTotal=0;waveSpawned=0;
  depotAmmo=0;depotMed=0;
  base.hp=base.maxHp;base.alive=true;
  cam.x=base.x;cam.y=base.y;
  for(const k in WEAPONS)WEAPONS[k].owned=(k==='pistol');
  gState='PLAYING';
-// Если клиент — не запускать игровую логику хоста
-  if(netRole === 'client') {
-    // Клиент только рендерит, логику гоняет хост
-    gState = 'PLAYING';
-    return; // НЕ вызываем nextWave() и т.д.
-  }
  ensAudio();startAmbient();
  document.getElementById('ui-menu').classList.add('hidden');
  document.getElementById('ui-death').classList.add('hidden');
@@ -1498,19 +1240,15 @@ function initGame(numPlayers){
  document.getElementById('ui-pause-ctrl').classList.add('hidden');
  document.getElementById('base-ui').classList.remove('dead');
  document.getElementById('base-ttl').classList.remove('dead');
-spawnInitSupplies();
-nextWave();
-updateUI();
-renderShop();
+ spawnInitSupplies();
+ nextWave();
+ updateUI();
+ renderShop();
 }
 
 function goMainMenu(){
-  stopHostBroadcast();  // <-- добавить
-  disconnectMQTT();     // <-- добавить
-  netRole = null;       // <-- добавить
-  // ... остальной код без изменений
  gState='MENU';stopAmbient();
- airdropPlane=null;
+ airdropPlane=null;fartFogTimer=0;
  document.getElementById('ui-menu').classList.remove('hidden');
  document.getElementById('ui-death').classList.add('hidden');
  document.getElementById('ui-pause').classList.add('hidden');
@@ -1623,7 +1361,7 @@ function interactDepot(p){
 function endGame(reason){
  if(gState==='DEAD')return;
  gState='DEAD';stopAmbient();
- airdropPlane=null;
+ airdropPlane=null;fartFogTimer=0;
  document.getElementById('ui-death').classList.remove('hidden');
  document.getElementById('ui-pause').classList.add('hidden');
  document.getElementById('death-reason').innerText=reason;
@@ -1780,8 +1518,6 @@ function trySpawn(){
 // ===== UPDATE =====
 function update(){
  if(gState!=='PLAYING')return;
- if(netRole === 'client') return;
-
  tick++;
  fpsCnt++;
  const nowT=performance.now();
@@ -1789,6 +1525,7 @@ function update(){
  document.getElementById('fps-c').textContent='FPS: '+fpsVal;
  if(ammoCD>0)ammoCD--;
  if(medCD>0)medCD--;
+ if(fartFogTimer>0)fartFogTimer--;
  // Обновляем воздушный дроп
  updateAirdrop();
  if(tick%14===0){
@@ -1804,35 +1541,6 @@ function update(){
  let moved=false;
  let nx=p.x,ny=p.y;
  if(keys[p.controls.up]){ny-=spd;moved=true;}
-  // Сетевой ввод для игрока 2 (когда ты хост)
-if(netRole === 'host' && p.id === 2 && p._netInput) {
-    const ni = p._netInput;
-    let nx2 = p.x, ny2 = p.y;
-    let moved2 = false;
-    if(ni.up){ny2-=spd;moved2=true;}
-    if(ni.down){ny2+=spd;moved2=true;}
-    if(!colCheck(p.x,ny2,p.size))p.y=clamp(ny2,0,MAPSZ*TILE-p.size);
-    if(ni.left){nx2-=spd;moved2=true;}
-    if(ni.right){nx2+=spd;moved2=true;}
-    if(!colCheck(nx2,p.y,p.size))p.x=clamp(nx2,0,MAPSZ*TILE-p.size);
-    if(moved2)p.walk=(p.walk||0)+0.2;
-    if(ni.shoot){
-        let target=null,minD=Infinity;
-        for(const z of zombies){
-            const d=Math.hypot((p.x+p.size/2)-(z.x+z.size/2),(p.y+p.size/2)-(z.y+z.size/2));
-            if(d<minD&&d<580){minD=d;target=z;}
-        }
-        if(target)shoot(p,target.x+target.size/2,target.y+target.size/2);
-    }
-    continue;
-}
-
-// Если мы клиент — игрок 1 не управляется локально (им управляет хост)
-if(netRole === 'client' && p.id === 1) continue;
-
-// Если мы не в сети — всё работает как раньше (ничего не меняем)
-
-  {ny-=spd;moved=true;}
  if(keys[p.controls.down]){ny+=spd;moved=true;}
  if(!colCheck(p.x,ny,p.size))p.y=clamp(ny,0,MAPSZ*TILE-p.size);
  if(keys[p.controls.left]){nx-=spd;moved=true;}
@@ -2072,23 +1780,6 @@ if(netRole === 'client' && p.id === 1) continue;
  if(zombies.length===0&&!waveSpawning) nextWave();
  trySpawn();
  updateUI();
-// Клиент отправляет свой ввод хосту
-  if(netRole === 'client' && netConnected && gState === 'PLAYING') {
-    const p2 = players.find(p => p.id === 2);
-    if(p2) {
-      publishMQTT('client_input', {
-        up: !!keys[p2.controls.up],
-        down: !!keys[p2.controls.down],
-        left: !!keys[p2.controls.left],
-        right: !!keys[p2.controls.right],
-        shoot: !!keys[p2.controls.shoot],
-        reload: false, // обрабатывается через keydown
-        mine: false,
-        barrel: false,
-        interact: false
-      });
-    }
-  }
 }
 
 // ===== DRAW BASE =====
@@ -2422,6 +2113,79 @@ function draw(){
 		// Рисуем самолёт/дроп поверх всего (в экранных координатах)
 		// drawAirdrop вызывается внутри renderWorld в мировых координатах, это нормально
 	}
+// ===== ЗЕЛЁНЫЙ ТУМАН ОТ ПУКА С ВОЗДУХА =====
+if(fartFogTimer>0&&gState!=='MENU'){
+var fogA;
+if(fartFogTimer>165)fogA=(180-fartFogTimer)/15;
+else if(fartFogTimer<30)fogA=fartFogTimer/30;
+else fogA=1.0;
+fogA=Math.max(0,Math.min(1,fogA));
+
+// 1-й слой — почти чёрно-зелёный, очень плотный
+ctx.fillStyle='rgba(3,18,0,'+(fogA*0.94)+')';
+ctx.fillRect(0,0,canvas.width,canvas.height);
+
+// 2-й слой — тёмно-зелёный
+ctx.fillStyle='rgba(8,40,2,'+(fogA*0.88)+')';
+ctx.fillRect(0,0,canvas.width,canvas.height);
+
+// 3-й слой — ядовитый зелёный поверх
+ctx.fillStyle='rgba(15,60,0,'+(fogA*0.7)+')';
+ctx.fillRect(0,0,canvas.width,canvas.height);
+
+// Густые тёмные клубы
+for(var fi=0;fi<20;fi++){
+var fcx=(Math.sin(Date.now()/1300+fi*3.7)*0.55+0.5)*canvas.width;
+var fcy=(Math.cos(Date.now()/950+fi*2.3)*0.55+0.5)*canvas.height;
+var fr=80+Math.sin(Date.now()/650+fi*1.1)*40;
+ctx.fillStyle='rgba(5,35,0,'+(fogA*0.55)+')';
+ctx.beginPath();ctx.arc(fcx,fcy,fr,0,Math.PI*2);ctx.fill();
+}
+
+// Едва видимые зелёные пятна (создают ощущение газа)
+for(var fi2=0;fi2<30;fi2++){
+var fx2=(Math.sin(Date.now()/550+fi2*4.1)*0.65+0.5)*canvas.width;
+var fy2=(Math.cos(Date.now()/420+fi2*3.3)*0.65+0.5)*canvas.height;
+var fr2=30+Math.sin(Date.now()/340+fi2)*22;
+ctx.fillStyle='rgba(30,100,5,'+(fogA*0.35)+')';
+ctx.beginPath();ctx.arc(fx2,fy2,fr2,0,Math.PI*2);ctx.fill();
+}
+
+// Совсем мелкие частицы газа
+for(var fi3=0;fi3<18;fi3++){
+var fx3=(Math.sin(Date.now()/380+fi3*6.7)*0.7+0.5)*canvas.width;
+var fy3=(Math.cos(Date.now()/310+fi3*5.1)*0.7+0.5)*canvas.height;
+var fr3=10+Math.sin(Date.now()/270+fi3)*8;
+ctx.fillStyle='rgba(60,180,15,'+(fogA*0.18)+')';
+ctx.beginPath();ctx.arc(fx3,fy3,fr3,0,Math.PI*2);ctx.fill();
+}
+
+// Текст — еле проглядывает через газ
+var tA=Math.min(1,fogA*1.2);
+ctx.fillStyle='rgba(80,200,20,'+tA+')';
+var fSz=32+Math.sin(Date.now()/220)*6;
+ctx.font='bold '+Math.floor(fSz)+'px sans-serif';
+ctx.textAlign='center';ctx.shadowBlur=30;ctx.shadowColor='rgba(0,255,0,0.5)';
+var fTxts=['💨 ПУУУК!','💨 ГАЗОВАЯ АТАКА!','💩 КТО НАВАЛИЛ?!','🤢 ВОЗДУШНАЯ БОМБА!','💨 ТОКСИЧНО!','🤮 ОТРАВЛЕНИЕ!'];
+var fTi=Math.floor(Date.now()/700)%fTxts.length;
+ctx.fillText(fTxts[fTi],canvas.width/2,canvas.height/2-15);
+
+ctx.font='bold 16px sans-serif';
+ctx.fillStyle='rgba(120,220,50,'+(tA*0.8)+')';
+ctx.shadowBlur=15;ctx.shadowColor='rgba(0,180,0,0.4)';
+ctx.fillText('👃 Видимость: '+Math.ceil(fartFogTimer/60)+' сек...',canvas.width/2,canvas.height/2+40);
+
+// Рамка экрана — токсичная
+ctx.shadowBlur=0;
+var edgeW=40+Math.sin(Date.now()/400)*15;
+ctx.fillStyle='rgba(0,30,0,'+(fogA*0.85)+')';
+ctx.fillRect(0,0,edgeW,canvas.height);
+ctx.fillRect(canvas.width-edgeW,0,edgeW,canvas.height);
+ctx.fillRect(0,0,canvas.width,edgeW);
+ctx.fillRect(0,canvas.height-edgeW,canvas.width,edgeW);
+
+ctx.shadowBlur=0;
+}
 	requestAnimationFrame(draw);
 }
 
@@ -2429,4 +2193,4 @@ function resizeCanvas(){canvas.width=window.innerWidth;canvas.height=window.inne
 window.addEventListener('resize',resizeCanvas);
 resizeCanvas();
 draw();
-setInterval(update,1000/60);  
+setInterval(update,1000/60);

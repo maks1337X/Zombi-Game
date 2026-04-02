@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Лесное Месиво — Зомби Кооператив</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Зомби Кооператив</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div id="ui-menu" class="overlay">    
+<!-- MENU -->
+<div id="ui-menu" class="overlay">
  <div style="text-align:center;width:min(880px,calc(100vw - 12px));">
  <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:2px;">
  <span style="font-size:1.8rem;">🌲</span>
@@ -16,32 +16,7 @@
  <span style="font-size:1.8rem;">🌲</span>
  </div>
  <div class="menu-sub">☠ Лесной кошмар — КООП ☠</div>
- <div id="net-menu" class="hidden" style="text-align:center;width:min(520px,calc(100vw - 12px));">
-  <div class="menu-card">
-    <div style="font-size:1.1rem;color:#ccff88;font-weight:800;margin-bottom:12px;">🌐 СЕТЕВАЯ ИГРА</div>
-    
-    <div style="margin-bottom:10px;">
-      <input id="net-room" class="name-inp" placeholder="Код комнаты (придумай любой)" maxlength="20" value="room123">
-    </div>
-    
-    <div style="display:flex;gap:10px;justify-content:center;margin-bottom:12px;">
-      <button class="main-btn main-btn-g" style="padding:10px 24px;font-size:0.95rem;" onclick="startAsHost()">
-        👑 СОЗДАТЬ (Хост)
-      </button>
-      <button class="main-btn" style="padding:10px 24px;font-size:0.95rem;" onclick="startAsClient()">
-        🎮 ПОДКЛЮЧИТЬСЯ
-      </button>
-    </div>
-    
-    <div id="net-status" style="font-size:0.8rem;color:#88bb66;min-height:2em;padding:6px;background:rgba(0,0,0,0.3);border-radius:6px;margin-bottom:8px;">
-      Введи код комнаты и выбери роль
-    </div>
-    
-    <button class="main-btn main-btn-gray" style="padding:8px 20px;font-size:0.85rem;" onclick="hideNetworkMenu()">
-      ← Назад
-    </button>
-  </div>
-</div>
+ <div id="menu-main">
  <div class="menu-card">
  <div class="menu-tabs" id="menu-tabs">
  <div class="menu-tab active" data-tab="howto">📖 КАК ИГРАТЬ</div>
@@ -79,11 +54,6 @@
  </div>
  </div>
  <div class="mode-btns">
-    <div class="mode-card" onclick="showNetworkMenu()">
-  <div style="font-size:2.2rem;">🌐</div>
-  <h3>СЕТЕВАЯ ИГРА</h3>
-  <p>Играй с другом через интернет по MQTT протоколу.</p>
-</div>
  <div class="mode-card" onclick="initGame(2)">
  <div style="font-size:2.2rem;">🖥️</div>
  <h3>ЗА ОДНИМ КОМПЬЮТЕРОМ</h3>
@@ -202,6 +172,6 @@
 <div id="fps-c">FPS: --</div>
 <canvas id="gc"></canvas>
 
-    <script src="script.js"></script>
+<script src="script.js"></script>
 </body>
 </html>
