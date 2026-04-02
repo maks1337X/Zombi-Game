@@ -111,14 +111,13 @@ function connectMQTT() {
   mqttClient.onConnectionLost = (resp) => {
     console.warn('MQTT соединение потеряно:', resp.errorMessage || resp);
     
-    // Автоматическая попытка переподключения через 2 секунды
-    if (gState === 'PLAYING' || document.getElementById('ui-lobby').classList.contains('hidden') === false) {
+    if ((gState === 'PLAYING' || !document.getElementById('ui-lobby').classList.contains('hidden'))) {
       setTimeout(() => {
         if (mqttClient && !mqttClient.isConnected()) {
-          console.log("Попытка переподключения к MQTT...");
+          console.log("Повторное подключение...");
           connectMQTT();
         }
-      }, 2000);
+      }, 2500);
     }
   };
   
@@ -126,13 +125,12 @@ function connectMQTT() {
   
   mqttClient.connect({
     useSSL: true,
-    keepAliveInterval: 20,           // Отправляем пинг каждые 20 секунд
+    keepAliveInterval: 25,
     cleanSession: true,
     onSuccess: () => {
       console.log(`✅ MQTT подключён к комнате ${roomId} (WSS)`);
       mqttClient.subscribe(`zombie/room/${roomId}/#`);
       
-      // Отправляем сообщение о присоединении
       sendMQTT({ 
         type: 'join', 
         id: myPlayerId, 
@@ -141,8 +139,8 @@ function connectMQTT() {
       });
     },
     onFailure: (err) => {
-      console.error("Ошибка подключения MQTT:", err);
-      alert('Не удалось подключиться к MQTT серверу.\n\nПопробуйте создать комнату заново через 5 секунд.');
+      console.error("Ошибка подключения:", err);
+      alert('Ошибка подключения к серверу. Попробуйте создать комнату заново.');
       closeLobby();
     }
   });
@@ -176,10 +174,32 @@ function handleMQTTMessage(message) {
     onlinePlayers[data.id] = data;
     console.log(`Игрок ${data.id} присоединился`);
 
-    if (isHost && Object.keys(onlinePlayers).length >= 2 && gState !== 'PLAYING') {
-      console.log("✅ Два игрока в комнате. Запускаем игру...");
-      setTimeout(() => initGame(2, true), 800);
+    // === КРИТИЧНОЕ ИСПРАВЛЕНИЕ ===
+    // Если в комнате уже 2 игрока — запускаем игру У ВСЕХ
+    if (Object.keys(onlinePlayers).length >= 2) {
+      console.log("✅ В комнате 2 игрока. Запускаем игру для всех...");
+      
+      if (gState !== 'PLAYING') {
+        initGame(2, true);
+      }
     }
+  }
+  
+  else if (data.type === 'playerState' && !isHost) {
+    const p = players.find(pl => pl.id === data.id);
+    if (p && p.id !== myPlayerId) {
+      p.x = data.x || p.x;
+      p.y = data.y || p.y;
+      p.hp = data.hp || p.hp;
+    }
+  }
+  
+  else if (data.type === 'worldState' && !isHost) {
+    applyRemoteWorldState(data.state);
+  }
+  
+  else if (data.type === 'playerAction' && isHost) {
+    executeRemoteAction(data);
   }
 }
 
