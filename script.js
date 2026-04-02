@@ -52,7 +52,7 @@ const tileRnd = [];
 const keys = {};
 let mDown = false;
 let floorCache = null;
-// ====================== MQTT МУЛЬТИПЛЕЕР (добавлено) ======================
+// ====================== MQTT МУЛЬТИПЛЕЕР (обновлённый) ======================
 let mqttClient = null;
 let roomId = null;
 let isHost = false;
@@ -60,9 +60,10 @@ let myPlayerId = 1;
 let multiplayerMode = false;
 let lastWorldSync = 0;
 let lastInputSend = 0;
+let onlinePlayers = {};
 
-const MQTT_BROKER = "test.mosquitto.org";
-const MQTT_PORT = 8081;        // WSS порт для mosquitto
+const MQTT_BROKER = "broker.emqx.io";
+const MQTT_PORT = 8084;   // Secure WebSocket порт EMQX
 
 function startOnlineLobby() {
   document.getElementById('ui-menu').classList.add('hidden');
@@ -111,23 +112,22 @@ function connectMQTT() {
   mqttClient.onConnectionLost = (resp) => {
     console.warn('MQTT соединение потеряно:', resp.errorMessage || resp);
     
-    // Более агрессивное переподключение
     setTimeout(() => {
       if (roomId && (!mqttClient || !mqttClient.isConnected())) {
         console.log(`Повторное подключение к комнате ${roomId}...`);
         connectMQTT();
       }
-    }, 1500);
+    }, 2000);
   };
   
   mqttClient.onMessageArrived = handleMQTTMessage;
   
   mqttClient.connect({
     useSSL: true,
-    keepAliveInterval: 40,      // увеличено
+    keepAliveInterval: 45,      // сильно увеличено
     cleanSession: true,
     onSuccess: () => {
-      console.log(`✅ MQTT подключён к комнате ${roomId} (WSS - Mosquitto)`);
+      console.log(`✅ MQTT подключён к комнате ${roomId} (EMQX WSS)`);
       mqttClient.subscribe(`zombie/room/${roomId}/#`);
       
       sendMQTT({ 
@@ -138,8 +138,8 @@ function connectMQTT() {
       });
     },
     onFailure: (err) => {
-      console.error("Ошибка подключения к MQTT:", err);
-      setTimeout(connectMQTT, 4000); // повтор через 4 секунды
+      console.error("Ошибка подключения:", err);
+      setTimeout(connectMQTT, 5000);
     }
   });
 }
