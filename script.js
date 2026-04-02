@@ -116,7 +116,7 @@ function connectMQTT() {
   mqttClient.onMessageArrived = handleMQTTMessage;
   
   mqttClient.connect({
-    useSSL: true,                    // ← обязательно для WSS
+    useSSL: true,
     onSuccess: () => {
       mqttClient.subscribe(`zombie/room/${roomId}/#`);
       console.log(`✅ MQTT подключён к комнате ${roomId} (WSS)`);
@@ -124,7 +124,7 @@ function connectMQTT() {
     },
     onFailure: (err) => {
       console.error("Ошибка подключения MQTT:", err);
-      alert('Не удалось подключиться к MQTT-брокеру.\nПроверьте интернет и попробуйте ещё раз.');
+      alert('Не удалось подключиться к MQTT-брокеру.\nВозможно, проблема с интернетом или брокером.\nПопробуйте ещё раз через 5 секунд.');
       closeLobby();
     }
   });
@@ -141,11 +141,23 @@ function sendMQTT(payload) {
 
 function handleMQTTMessage(message) {
   let data;
-  try { data = JSON.parse(message.payloadString); } catch(e) { return; }
+  try { 
+    data = JSON.parse(message.payloadString); 
+  } catch(e) { 
+    return; 
+  }
+
+  // Защита от undefined
+  if (!onlinePlayers) onlinePlayers = {};
 
   if (data.type === 'join') {
-    if (isHost && Object.keys(onlinePlayers || {}).length >= 1) {
-      setTimeout(() => initGame(2, true), 800);
+    onlinePlayers[data.id] = data;
+    
+    // Если мы хост и уже есть 2 игрока — запускаем игру
+    if (isHost && Object.keys(onlinePlayers).length >= 2) {
+      setTimeout(() => {
+        if (gState !== 'PLAYING') initGame(2, true);
+      }, 800);
     }
   }
   
