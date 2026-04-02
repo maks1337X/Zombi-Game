@@ -111,21 +111,20 @@ function connectMQTT() {
   mqttClient.onConnectionLost = (resp) => {
     console.warn('MQTT соединение потеряно:', resp.errorMessage || resp);
     
-    if ((gState === 'PLAYING' || !document.getElementById('ui-lobby').classList.contains('hidden'))) {
-      setTimeout(() => {
-        if (mqttClient && !mqttClient.isConnected()) {
-          console.log("Повторное подключение...");
-          connectMQTT();
-        }
-      }, 2500);
-    }
+    // Автопереподключение
+    setTimeout(() => {
+      if (mqttClient && !mqttClient.isConnected() && roomId) {
+        console.log("Повторное подключение к комнате " + roomId + "...");
+        connectMQTT();
+      }
+    }, 1800);
   };
   
   mqttClient.onMessageArrived = handleMQTTMessage;
   
   mqttClient.connect({
     useSSL: true,
-    keepAliveInterval: 25,
+    keepAliveInterval: 30,     // увеличил до 30 секунд
     cleanSession: true,
     onSuccess: () => {
       console.log(`✅ MQTT подключён к комнате ${roomId} (WSS)`);
@@ -139,16 +138,15 @@ function connectMQTT() {
       });
     },
     onFailure: (err) => {
-      console.error("Ошибка подключения:", err);
-      alert('Ошибка подключения к серверу. Попробуйте создать комнату заново.');
-      closeLobby();
+      console.error("Ошибка подключения MQTT:", err);
+      setTimeout(connectMQTT, 3000); // повторная попытка
     }
   });
 }
 
 function sendMQTT(payload) {
   if (!mqttClient || !mqttClient.isConnected()) {
-    console.warn("Попытка отправки, но MQTT не подключён");
+    //console.warn("MQTT не подключён, сообщение пропущено");
     return;
   }
   try {
@@ -156,7 +154,7 @@ function sendMQTT(payload) {
     msg.destinationName = `zombie/room/${roomId}/data`;
     mqttClient.send(msg);
   } catch (e) {
-    console.warn("Ошибка отправки MQTT сообщения:", e);
+    //console.warn("Ошибка отправки:", e);
   }
 }
 
@@ -1678,37 +1676,47 @@ function trySpawn(){
 function update(){
  if(gState!=='PLAYING')return;
  tick++;
-   // ====================== MQTT МУЛЬТИПЛЕЕР ЛОГИКА ======================
+    // ====================== MQTT МУЛЬТИПЛЕЕР ЛОГИКА ======================
   if (multiplayerMode && gState === 'PLAYING') {
     const myPlayer = players.find(p => p.id === myPlayerId);
     
     if (myPlayer) {
+      // Отправляем позицию и HP своего игрока каждые 50мс
       if (Date.now() - lastInputSend > 50) {
         lastInputSend = Date.now();
         sendMQTT({
           type: 'playerState',
           id: myPlayerId,
-          x: myPlayer.x,
-          y: myPlayer.y,
-          hp: myPlayer.hp
+          x: Math.round(myPlayer.x),
+          y: Math.round(myPlayer.y),
+          hp: Math.round(myPlayer.hp)
         });
       }
     }
     
-    if (isHost && Date.now() - lastWorldSync > 100) {
+    // Хост отправляет состояние мира каждые 120мс
+    if (isHost && Date.now() - lastWorldSync > 120) {
       lastWorldSync = Date.now();
       const worldState = {
-        zombies: zombies.map(z => ({id: z.id || Math.random(), x: z.x, y: z.y, hp: z.hp, type: z.type})),
-        baseHp: base.hp,
+        type: 'worldState',
+        zombies: zombies.map(z => ({
+          id: z.id || Math.random().toString(36).substr(2, 5),
+          x: Math.round(z.x),
+          y: Math.round(z.y),
+          hp: Math.round(z.hp),
+          type: z.type || 'normal'
+        })),
+        baseHp: Math.round(base.hp),
         wave: wave
       };
-      sendMQTT({ type: 'worldState', state: worldState });
+      sendMQTT(worldState);
     }
     
+    // Не-хост только применяет данные от хоста
     if (!isHost) {
       if (myPlayer) updateSinglePlayer(myPlayer);
       updateUI();
-      return;   // Не-хост не запускает полную симуляцию
+      return; 
     }
   }
  fpsCnt++;
