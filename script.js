@@ -1694,16 +1694,17 @@ function update(){
       }
     }
     
-    // Хост отправляет состояние мира каждые 120мс
-    if (isHost && Date.now() - lastWorldSync > 120) {
+        // Хост отправляет состояние мира каждые 150мс
+    if (isHost && Date.now() - lastWorldSync > 150) {
       lastWorldSync = Date.now();
+      
       const worldState = {
-        type: 'worldState',
+        type: 'worldState',                    // ← обязательно!
         zombies: zombies.map(z => ({
-          id: z.id || Math.random().toString(36).substr(2, 5),
+          id: z.id || Math.random().toString(36).slice(2, 8),
           x: Math.round(z.x),
           y: Math.round(z.y),
-          hp: Math.round(z.hp),
+          hp: Math.round(z.hp || 100),
           type: z.type || 'normal'
         })),
         baseHp: Math.round(base.hp),
@@ -2399,18 +2400,31 @@ function updateSinglePlayer(p) {
   const ctrl = pCtrl[p.id-1];
   const speed = 4.2;
   
-  if (keys[ctrl.up]) p.y -= speed;
-  if (keys[ctrl.down]) p.y += speed;
-  if (keys[ctrl.left]) p.x -= speed;
-  if (keys[ctrl.right]) p.x += speed;
-  
+  let newX = p.x;
+  let newY = p.y;
+
+  if (keys[ctrl.up]) newY -= speed;
+  if (keys[ctrl.down]) newY += speed;
+  if (keys[ctrl.left]) newX -= speed;
+  if (keys[ctrl.right]) newX += speed;
+
+  // Для не-хоста временно отключаем коллизию со стенами (пока лабиринт не синхронизирован)
+  if (!isHost) {
+    p.x = newX;
+    p.y = newY;
+  } else {
+    // Хост проверяет стены как обычно
+    if (!colCheck(newX, p.y, p.size)) p.x = newX;
+    if (!colCheck(p.x, newY, p.size)) p.y = newY;
+  }
+
+  // Стрельба...
   if (keys[ctrl.shoot] && !p.reloading && p.ammo > 0) {
     keys[ctrl.shoot] = false;
     if (multiplayerMode && !isHost) {
       sendMQTT({ type: 'playerAction', action: 'shoot', playerId: p.id });
       return;
     }
-    // Если функция createBullet существует — вызываем её
     if (typeof createBullet === 'function') createBullet(p);
   }
 }
@@ -2424,15 +2438,29 @@ function executeRemoteAction(data) {
 }
 
 function applyRemoteWorldState(state) {
-  if (state.zombies) {
+  if (!state) return;
+
+  // Защита от undefined
+  if (state.zombies && Array.isArray(state.zombies)) {
     zombies = state.zombies.map(s => {
       let z = zombies.find(zz => zz.id === s.id);
-      if (!z) z = { id: s.id, size: 28, ...s };
+      if (!z) {
+        z = { 
+          id: s.id, 
+          size: 28, 
+          lastX: s.x, 
+          lastY: s.y,
+          type: s.type || 'normal',
+          hp: s.hp || 100,
+          maxHp: s.hp || 100
+        };
+      }
       Object.assign(z, s);
       return z;
     });
   }
-  if (state.baseHp !== undefined) base.hp = state.baseHp;
-  if (state.wave !== undefined) wave = state.wave;
+
+  if (typeof state.baseHp === 'number') base.hp = state.baseHp;
+  if (typeof state.wave === 'number') wave = state.wave;
 }
 setInterval(update,1000/60);
