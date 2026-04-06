@@ -52,8 +52,8 @@ const tileRnd = [];
 const keys = {};
 let mDown = false;
 let floorCache = null;
-// ====================== MQTT МУЛЬТИПЛЕЕР (EMQX - более стабильный) ======================
-let mqttClient = null;
+// ====================== WEBSOCKET МУЛЬТИПЛЕЕР (Render Server) ======================
+let ws = null;
 let roomId = null;
 let isHost = false;
 let myPlayerId = 1;
@@ -62,8 +62,7 @@ let lastWorldSync = 0;
 let lastInputSend = 0;
 let onlinePlayers = {};
 
-const MQTT_BROKER = "broker.emqx.io";
-const MQTT_PORT = 8084;   // WSS порт EMQX
+const SERVER_URL = "wss://zombi-game-3g9e.onrender.com";   // ← ТВОЯ ССЫЛКА
 
 function startOnlineLobby() {
   document.getElementById('ui-menu').classList.add('hidden');
@@ -72,27 +71,27 @@ function startOnlineLobby() {
 }
 
 function closeLobby() {
-  if (mqttClient) mqttClient.disconnect();
-  mqttClient = null;
+  if (ws) ws.close();
+  ws = null;
   roomId = null;
   document.getElementById('ui-lobby').classList.add('hidden');
   document.getElementById('ui-menu').classList.remove('hidden');
 }
 
-function createMQTTGame() {
+function createWebSocketGame() {
   roomId = String(100000 + Math.floor(Math.random() * 900000));
   isHost = true;
   myPlayerId = 1;
   document.getElementById('lobby-info').innerHTML = `
     <b>Комната создана!</b><br>
     ID: <span style="font-size:1.6rem;color:#ff0">${roomId}</span><br>
-    Отправьте этот ID другу и нажмите «Присоединиться» у него.<br>
+    Отправьте этот ID другу.<br>
     <span style="color:#88ff88">Ожидаем второго игрока...</span>
   `;
-  connectMQTT();
+  connectWebSocket();
 }
 
-function joinMQTTGame() {
+function joinWebSocketGame() {
   const input = document.getElementById('room-id-input').value.trim();
   if (!input || input.length !== 6) {
     alert('Введите 6-значный ID комнаты!');
@@ -102,101 +101,60 @@ function joinMQTTGame() {
   isHost = false;
   myPlayerId = 2;
   document.getElementById('lobby-info').innerHTML = `Присоединяемся к комнате <b>${roomId}</b>...`;
-  connectMQTT();
+  connectWebSocket();
 }
 
-function connectMQTT() {
-  const clientId = `zombie_${myPlayerId}_${Date.now()}`;
-  mqttClient = new Paho.MQTT.Client(MQTT_BROKER, Number(MQTT_PORT), clientId);
-  
-  mqttClient.onConnectionLost = (resp) => {
-    console.warn('MQTT соединение потеряно:', resp.errorMessage || resp);
-    
+function connectWebSocket() {
+  ws = new WebSocket(SERVER_URL);
+
+  ws.onopen = () => {
+    console.log(`✅ WebSocket подключён к серверу`);
+    ws.send(JSON.stringify({
+      type: 'join',
+      roomId: roomId,
+      id: myPlayerId,
+      name: pNames[myPlayerId-1] || ('Игрок ' + myPlayerId),
+      costume: pCostumes[myPlayerId-1] ? pCostumes[myPlayerId-1].id : 'soldier'
+    }));
+  };
+
+  ws.onmessage = (event) => {
+    try {
+      const data = JSON.parse(event.data);
+      handleWebSocketMessage(data);
+    } catch(e) {}
+  };
+
+  ws.onclose = () => {
+    console.warn('WebSocket соединение закрыто');
     setTimeout(() => {
-      if (roomId && (!mqttClient || !mqttClient.isConnected())) {
-        console.log(`Повторное подключение к комнате ${roomId}...`);
-        connectMQTT();
-      }
+      if (roomId) connectWebSocket();
     }, 2000);
   };
-  
-  mqttClient.onMessageArrived = handleMQTTMessage;
-  
-  mqttClient.connect({
-    useSSL: true,
-    keepAliveInterval: 45,
-    cleanSession: true,
-    onSuccess: () => {
-      console.log(`✅ MQTT подключён к комнате ${roomId} (EMQX WSS)`);
-      mqttClient.subscribe(`zombie/room/${roomId}/#`);
-      
-      sendMQTT({ 
-        type: 'join', 
-        id: myPlayerId, 
-        name: pNames[myPlayerId-1] || ('Игрок ' + myPlayerId), 
-        costume: pCostumes[myPlayerId-1] ? pCostumes[myPlayerId-1].id : 'soldier' 
-      });
-    },
-    onFailure: (err) => {
-      console.error("Ошибка подключения к EMQX:", err);
-      alert('Не удалось подключиться к EMQX. Попробуйте создать комнату заново.');
-      closeLobby();
-    }
-  });
+
+  ws.onerror = (err) => {
+    console.error('WebSocket ошибка:', err);
+  };
 }
 
-function sendMQTT(payload) {
-  if (!mqttClient || !mqttClient.isConnected()) return;
-  try {
-    const msg = new Paho.MQTT.Message(JSON.stringify(payload));
-    msg.destinationName = `zombie/room/${roomId}/data`;
-    mqttClient.send(msg);
-  } catch (e) {}
-}
-
-function handleMQTTMessage(message) {
-  let data;
-  try { 
-    data = JSON.parse(message.payloadString); 
-  } catch(e) { 
-    return; 
+function sendWebSocket(payload) {
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify(payload));
   }
+}
 
-  if (typeof onlinePlayers === 'undefined') onlinePlayers = {};
-
+function handleWebSocketMessage(data) {
   if (data.type === 'join') {
     onlinePlayers[data.id] = data;
     console.log(`Игрок ${data.id} присоединился`);
 
-    // === КРИТИЧНОЕ ИСПРАВЛЕНИЕ ===
-    // Если в комнате уже 2 игрока — запускаем игру У ВСЕХ
-    if (Object.keys(onlinePlayers).length >= 2) {
-      console.log("✅ В комнате 2 игрока. Запускаем игру для всех...");
-      
-      if (gState !== 'PLAYING') {
-        initGame(2, true);
-      }
+    if (Object.keys(onlinePlayers).length >= 2 && gState !== 'PLAYING') {
+      console.log("✅ Два игрока. Запускаем игру...");
+      initGame(2, true);
     }
   }
-  
-  else if (data.type === 'playerState' && !isHost) {
-    const p = players.find(pl => pl.id === data.id);
-    if (p && p.id !== myPlayerId) {
-      p.x = data.x || p.x;
-      p.y = data.y || p.y;
-      p.hp = data.hp || p.hp;
-    }
-  }
-  
-  else if (data.type === 'worldState' && !isHost) {
-    applyRemoteWorldState(data.state);
-  }
-  
-  else if (data.type === 'playerAction' && isHost) {
-    executeRemoteAction(data);
-  }
+  // Здесь позже добавим обработку playerState, worldState и т.д.
 }
-
 const base = { x: 20.5*TILE, y: 20.5*TILE, size: 76, hp: 360, maxHp: 360, alive: true, radius: 42 };
 
 // ===== COSTUMES =====

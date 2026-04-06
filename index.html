@@ -132,13 +132,13 @@
  <div class="pause-card" style="min-width:460px;max-width:520px;">
   <h2 style="color:#ffd700;margin-bottom:20px;">🌐 ОНЛАЙН КООП (MQTT)</h2>
   <div id="lobby-content">
-   <button onclick="createMQTTGame()" class="main-btn main-btn-g" style="width:100%;margin-bottom:16px;font-size:1.3rem;">Создать комнату</button>
+   <button onclick="createWebSocketGame()" class="main-btn main-btn-g" style="width:100%;margin-bottom:16px;font-size:1.3rem;">Создать комнату</button>
    
    <div style="text-align:center;margin:20px 0;color:#88bb66;font-size:0.95rem;">или присоединись по ID</div>
    
    <input id="room-id-input" type="text" maxlength="6" placeholder="123456" style="width:100%;padding:16px 12px;font-size:1.4rem;text-align:center;background:rgba(0,0,0,0.6);border:2px solid #88bb66;border-radius:12px;color:#fff;margin-bottom:12px;letter-spacing:4px;">
    
-   <button onclick="joinMQTTGame()" class="main-btn" style="width:100%;">Присоединиться к комнате</button>
+   <button onclick="joinWebSocketGame()" class="main-btn" style="width:100%;">Присоединиться к комнате</button>
    
    <div id="lobby-info" style="margin-top:24px;padding:14px;background:rgba(6,18,3,0.8);border-radius:10px;font-size:0.85rem;line-height:1.5;color:#ccff88;min-height:68px;"></div>
   </div>
