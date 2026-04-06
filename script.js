@@ -153,7 +153,14 @@ function handleWebSocketMessage(data) {
       console.log("✅ Два игрока. Запускаем игру...");
       initGame(2, true);
     }
+  } 
+  else if (data.type === 'startGame') {
+    if (gState !== 'PLAYING') {
+      console.log("Получена команда startGame");
+      initGame(2, true);
+    }
   }
+  // Позже добавим обработку playerState и worldState
 }
 const base = { x: 20.5*TILE, y: 20.5*TILE, size: 76, hp: 360, maxHp: 360, alive: true, radius: 42 };
 
