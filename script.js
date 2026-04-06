@@ -29,10 +29,10 @@ let ammoPickups = [];
 let medPickups = [];
 let dmgNums = [];
 let airdrops = []; // система воздушных дропов
-let wave = 10000;
-let waveSpawning = true;
-let waveTotal = 10000;
-let waveSpawned = 100000;
+let wave = 0;
+let waveSpawning = false;
+let waveTotal = 0;
+let waveSpawned = 0;
 let gCoins = 0;
 let depotAmmo = 0;
 let depotMed = 0;
@@ -52,109 +52,7 @@ const tileRnd = [];
 const keys = {};
 let mDown = false;
 let floorCache = null;
-// ====================== WEBSOCKET МУЛЬТИПЛЕЕР (Render Server) ======================
-let ws = null;
-let roomId = null;
-let isHost = false;
-let myPlayerId = 1;
-let multiplayerMode = false;
-let lastWorldSync = 0;
-let lastInputSend = 0;
-let onlinePlayers = {};
 
-const SERVER_URL = "wss://zombi-game-3g9e.onrender.com";   // ← ТВОЯ ССЫЛКА
-
-function startOnlineLobby() {
-  document.getElementById('ui-menu').classList.add('hidden');
-  document.getElementById('ui-lobby').classList.remove('hidden');
-  document.getElementById('lobby-info').innerHTML = 'Готовы к бою?<br>Создайте комнату или введите ID от друга.';
-}
-
-function closeLobby() {
-  if (ws) ws.close();
-  ws = null;
-  roomId = null;
-  document.getElementById('ui-lobby').classList.add('hidden');
-  document.getElementById('ui-menu').classList.remove('hidden');
-}
-
-function createWebSocketGame() {
-  roomId = String(100000 + Math.floor(Math.random() * 900000));
-  isHost = true;
-  myPlayerId = 1;
-  document.getElementById('lobby-info').innerHTML = `
-    <b>Комната создана!</b><br>
-    ID: <span style="font-size:1.6rem;color:#ff0">${roomId}</span><br>
-    Отправьте этот ID другу.<br>
-    <span style="color:#88ff88">Ожидаем второго игрока...</span>
-  `;
-  connectWebSocket();
-}
-
-function joinWebSocketGame() {
-  const input = document.getElementById('room-id-input').value.trim();
-  if (!input || input.length !== 6) {
-    alert('Введите 6-значный ID комнаты!');
-    return;
-  }
-  roomId = input;
-  isHost = false;
-  myPlayerId = 2;
-  document.getElementById('lobby-info').innerHTML = `Присоединяемся к комнате <b>${roomId}</b>...`;
-  connectWebSocket();
-}
-
-function connectWebSocket() {
-  ws = new WebSocket(SERVER_URL);
-
-  ws.onopen = () => {
-    console.log(`✅ WebSocket подключён к серверу`);
-    ws.send(JSON.stringify({
-      type: 'join',
-      roomId: roomId,
-      id: myPlayerId,
-      name: pNames[myPlayerId-1] || ('Игрок ' + myPlayerId),
-      costume: pCostumes[myPlayerId-1] ? pCostumes[myPlayerId-1].id : 'soldier'
-    }));
-  };
-
-  ws.onmessage = (event) => {
-    try {
-      const data = JSON.parse(event.data);
-      handleWebSocketMessage(data);
-    } catch(e) {}
-  };
-
-  ws.onclose = () => {
-    console.warn('WebSocket соединение закрыто');
-    setTimeout(() => {
-      if (roomId) connectWebSocket();
-    }, 2000);
-  };
-
-  ws.onerror = (err) => {
-    console.error('WebSocket ошибка:', err);
-  };
-}
-
-function sendWebSocket(payload) {
-  if (ws && ws.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify(payload));
-  }
-}
-
-function handleWebSocketMessage(data) {
-  if (data.type === 'join') {
-    onlinePlayers[data.id] = data;
-    console.log(`Игрок ${data.id} присоединился`);
-
-    if (Object.keys(onlinePlayers).length >= 2 && gState !== 'PLAYING') {
-      console.log("✅ Два игрока. Запускаем игру...");
-      initGame(2, true);
-    }
-  }
-  // Здесь позже добавим обработку playerState, worldState и т.д.
-}
 const base = { x: 20.5*TILE, y: 20.5*TILE, size: 76, hp: 360, maxHp: 360, alive: true, radius: 42 };
 
 // ===== COSTUMES =====
@@ -1306,7 +1204,7 @@ function spawnBoss(){
 }
 
 // ===== INIT =====
-function initGame(numPlayers, isOnline = false){
+function initGame(numPlayers){
  numPlayers = numPlayers || 2;
  currentPlayers = numPlayers;
  generateMaze();buildTileRnd();buildFloorCache();
@@ -1334,15 +1232,6 @@ function initGame(numPlayers, isOnline = false){
  cam.x=base.x;cam.y=base.y;
  for(const k in WEAPONS)WEAPONS[k].owned=(k==='pistol');
  gState='PLAYING';
-   multiplayerMode = isOnline;
-  
-  // === ОНЛАЙН РЕЖИМ ===
-  if (isOnline) {
-    document.getElementById('ui-lobby').classList.add('hidden');
-  }
-  document.getElementById('ui-menu').classList.add('hidden');
-  
-  console.log(`🎮 Игра запущена: ${isOnline ? 'ОНЛАЙН МУЛЬТИПЛЕЕР' : 'ЛОКАЛЬНЫЙ РЕЖИМ'}`);
  ensAudio();startAmbient();
  document.getElementById('ui-menu').classList.add('hidden');
  document.getElementById('ui-death').classList.add('hidden');
@@ -1628,17 +1517,48 @@ function trySpawn(){
 
 // ===== UPDATE =====
 function update(){
- if(gState!=='PLAYING')return;
- tick++;
-    // ====================== MQTT МУЛЬТИПЛЕЕР ЛОГИКА ======================
+  if(gState !== 'PLAYING') {
+    updateUI();
+    return;
+  }
+
+  tick++;
+  fpsCnt++;
+  const nowT = performance.now();
+  if(nowT - fpsLast >= 1000){
+    fpsVal = fpsCnt;
+    fpsCnt = 0;
+    fpsLast = nowT;
+  }
+  document.getElementById('fps-c').textContent = 'FPS: ' + fpsVal;
+
+  if(ammoCD > 0) ammoCD--;
+  if(medCD > 0) medCD--;
+  if(fartFogTimer > 0) fartFogTimer--;
+
+  // Обновляем воздушный дроп
+  updateAirdrop();
+
+  if(tick % 14 === 0){
+    const lp = getLiving();
+    updateFF(flowP, lp.map(p => ({x: p.x + p.size/2, y: p.y + p.size/2})));
+    if(base.hp > 0) updateFF(flowB, [{x: base.x, y: base.y}]);
+  }
+
+  for(const p of players){
+    if(p.frozen > 0){ p.frozen--; p.slow = 0.6; }
+    else p.slow = 1;
+  }
+
+  // ====================== WEBSOCKET МУЛЬТИПЛЕЕР ЛОГИКА ======================
   if (multiplayerMode && gState === 'PLAYING') {
     const myPlayer = players.find(p => p.id === myPlayerId);
     
     if (myPlayer) {
-      // Отправляем позицию и HP своего игрока каждые 50мс
+      // Отправляем позицию своего игрока каждые 50мс
       if (Date.now() - lastInputSend > 50) {
         lastInputSend = Date.now();
-        sendMQTT({
+        sendWebSocket({
           type: 'playerState',
           id: myPlayerId,
           x: Math.round(myPlayer.x),
@@ -1648,12 +1568,12 @@ function update(){
       }
     }
     
-        // Хост отправляет состояние мира каждые 150мс
+    // Хост отправляет состояние мира каждые 150мс
     if (isHost && Date.now() - lastWorldSync > 150) {
       lastWorldSync = Date.now();
       
       const worldState = {
-        type: 'worldState',                    // ← обязательно!
+        type: 'worldState',
         zombies: zombies.map(z => ({
           id: z.id || Math.random().toString(36).slice(2, 8),
           x: Math.round(z.x),
@@ -1664,60 +1584,56 @@ function update(){
         baseHp: Math.round(base.hp),
         wave: wave
       };
-      sendMQTT(worldState);
+      sendWebSocket(worldState);
     }
     
-    // Не-хост только применяет данные от хоста
+    // Не-хост только обновляет своего игрока локально
     if (!isHost) {
       if (myPlayer) updateSinglePlayer(myPlayer);
       updateUI();
-      return; 
+      return;   // Не выполняем остальную логику зомби и т.д.
     }
   }
- fpsCnt++;
- const nowT=performance.now();
- if(nowT-fpsLast>=1000){fpsVal=fpsCnt;fpsCnt=0;fpsLast=nowT;}
- document.getElementById('fps-c').textContent='FPS: '+fpsVal;
- if(ammoCD>0)ammoCD--;
- if(medCD>0)medCD--;
- if(fartFogTimer>0)fartFogTimer--;
- // Обновляем воздушный дроп
- updateAirdrop();
- if(tick%14===0){
- const lp=getLiving();
- updateFF(flowP,lp.map(p=>({x:p.x+p.size/2,y:p.y+p.size/2})));
- if(base.hp>0)updateFF(flowB,[{x:base.x,y:base.y}]);
- }
- for(const p of players){if(p.frozen>0){p.frozen--;p.slow=0.6;}else p.slow=1;}
- // Движение игроков
- for(const p of players){
- if(p.hp<=0)continue;
- const spd=p.spd*p.slow;
- let moved=false;
- let nx=p.x,ny=p.y;
- if(keys[p.controls.up]){ny-=spd;moved=true;}
- if(keys[p.controls.down]){ny+=spd;moved=true;}
- if(!colCheck(p.x,ny,p.size))p.y=clamp(ny,0,MAPSZ*TILE-p.size);
- if(keys[p.controls.left]){nx-=spd;moved=true;}
- if(keys[p.controls.right]){nx+=spd;moved=true;}
- if(!colCheck(nx,p.y,p.size))p.x=clamp(nx,0,MAPSZ*TILE-p.size);
- if(moved)p.walk=(p.walk||0)+0.2;
- const doShoot=keys[p.controls.shoot]||(p.id===1&&currentPlayers===1&&mDown);
- if(doShoot){
- let target=null,minD=Infinity;
- for(const z of zombies){const d=Math.hypot((p.x+p.size/2)-(z.x+z.size/2),(p.y+p.size/2)-(z.y+z.size/2));if(d<minD&&d<580){minD=d;target=z;}}
- if(target)shoot(p,target.x+target.size/2,target.y+target.size/2);
- else shoot(p,p.x+90,p.y);
- }
- }
- // Камера
- const lv=getLiving();
- if(lv.length>0){
- const ax=lv.reduce((s,p)=>s+p.x+p.size/2,0)/lv.length;
- const ay=lv.reduce((s,p)=>s+p.y+p.size/2,0)/lv.length;
- cam.x+=(ax-canvas.width/2-cam.x)*0.09;
- cam.y+=(ay-canvas.height/2-cam.y)*0.09;
- }
+  // ====================== КОНЕЦ WEBSOCKET ЛОГИКИ ======================
+
+  // Движение игроков (локально для хоста и одиночной игры)
+  for(const p of players){
+    if(p.hp <= 0) continue;
+    const spd = p.spd * p.slow;
+    let nx = p.x, ny = p.y;
+
+    if(keys[p.controls.up]) ny -= spd;
+    if(keys[p.controls.down]) ny += spd;
+    if(!colCheck(p.x, ny, p.size)) p.y = clamp(ny, 0, MAPSZ*TILE - p.size);
+
+    if(keys[p.controls.left]) nx -= spd;
+    if(keys[p.controls.right]) nx += spd;
+    if(!colCheck(nx, p.y, p.size)) p.x = clamp(nx, 0, MAPSZ*TILE - p.size);
+
+    if(Math.abs(p.x - nx) > 0.1 || Math.abs(p.y - ny) > 0.1) p.walk = (p.walk || 0) + 0.2;
+
+    const doShoot = keys[p.controls.shoot] || (p.id === 1 && currentPlayers === 1 && mDown);
+    if(doShoot){
+      let target = null, minD = Infinity;
+      for(const z of zombies){
+        const d = Math.hypot((p.x + p.size/2) - (z.x + z.size/2), (p.y + p.size/2) - (z.y + z.size/2));
+        if(d < minD && d < 580){ minD = d; target = z; }
+      }
+      if(target) shoot(p, target.x + target.size/2, target.y + target.size/2);
+      else shoot(p, p.x + 90, p.y);
+    }
+  }
+
+  // Камера
+  const lv = getLiving();
+  if(lv.length > 0){
+    const ax = lv.reduce((s,p) => s + p.x + p.size/2, 0) / lv.length;
+    const ay = lv.reduce((s,p) => s + p.y + p.size/2, 0) / lv.length;
+    cam.x += (ax - canvas.width/2 - cam.x) * 0.09;
+    cam.y += (ay - canvas.height/2 - cam.y) * 0.09;
+  }
+
+  // ... (весь остальной код update() оставляем как есть: монеты, патроны, аптечки, пули, зомби и т.д.)
  // Монеты
  for(let i=droppedCoins.length-1;i>=0;i--){
  const c=droppedCoins[i];
@@ -2348,73 +2264,4 @@ function resizeCanvas(){canvas.width=window.innerWidth;canvas.height=window.inne
 window.addEventListener('resize',resizeCanvas);
 resizeCanvas();
 draw();
-// ====================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ДЛЯ ОНЛАЙН ======================
-function updateSinglePlayer(p) {
-  if (!p) return;
-  const ctrl = pCtrl[p.id-1];
-  const speed = 4.2;
-  
-  let newX = p.x;
-  let newY = p.y;
-
-  if (keys[ctrl.up]) newY -= speed;
-  if (keys[ctrl.down]) newY += speed;
-  if (keys[ctrl.left]) newX -= speed;
-  if (keys[ctrl.right]) newX += speed;
-
-  // Для не-хоста временно отключаем коллизию со стенами (пока лабиринт не синхронизирован)
-  if (!isHost) {
-    p.x = newX;
-    p.y = newY;
-  } else {
-    // Хост проверяет стены как обычно
-    if (!colCheck(newX, p.y, p.size)) p.x = newX;
-    if (!colCheck(p.x, newY, p.size)) p.y = newY;
-  }
-
-  // Стрельба...
-  if (keys[ctrl.shoot] && !p.reloading && p.ammo > 0) {
-    keys[ctrl.shoot] = false;
-    if (multiplayerMode && !isHost) {
-      sendMQTT({ type: 'playerAction', action: 'shoot', playerId: p.id });
-      return;
-    }
-    if (typeof createBullet === 'function') createBullet(p);
-  }
-}
-
-function executeRemoteAction(data) {
-  const p = players.find(pl => pl.id === data.playerId);
-  if (!p) return;
-  if (data.action === 'shoot' && typeof createBullet === 'function') {
-    createBullet(p);
-  }
-}
-
-function applyRemoteWorldState(state) {
-  if (!state) return;
-
-  // Защита от undefined
-  if (state.zombies && Array.isArray(state.zombies)) {
-    zombies = state.zombies.map(s => {
-      let z = zombies.find(zz => zz.id === s.id);
-      if (!z) {
-        z = { 
-          id: s.id, 
-          size: 28, 
-          lastX: s.x, 
-          lastY: s.y,
-          type: s.type || 'normal',
-          hp: s.hp || 100,
-          maxHp: s.hp || 100
-        };
-      }
-      Object.assign(z, s);
-      return z;
-    });
-  }
-
-  if (typeof state.baseHp === 'number') base.hp = state.baseHp;
-  if (typeof state.wave === 'number') wave = state.wave;
-}
 setInterval(update,1000/60);
