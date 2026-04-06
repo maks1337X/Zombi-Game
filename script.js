@@ -75,6 +75,13 @@ const DEF_CTRL = [
 const CTRL_LBL = { up:'Вверх', down:'Вниз', left:'Влево', right:'Вправо', shoot:'Стрельба', mine:'Мина', barrel:'Бочка', reload:'Перезарядка', interact:'Взаимодействие' };
 let pCtrl = [ {...DEF_CTRL[0]}, {...DEF_CTRL[1]} ];
 
+// ====================== START ONLINE LOBBY ======================
+function startOnlineLobby() {
+  document.getElementById('ui-menu').classList.add('hidden');
+  document.getElementById('ui-lobby').classList.remove('hidden');
+  document.getElementById('lobby-info').innerHTML = 'Готовы к бою?<br>Создайте комнату или введите ID от друга.';
+}
+
 function keyName(code) {
  const m = { Space:'Пробел',ShiftLeft:'L.Shift',ShiftRight:'R.Shift',ControlLeft:'L.Ctrl',ControlRight:'R.Ctrl',AltLeft:'L.Alt',AltRight:'R.Alt',ArrowUp:'↑',ArrowDown:'↓',ArrowLeft:'←',ArrowRight:'→',NumpadSubtract:'Num-',NumpadAdd:'Num+',Numpad0:'Num0',Enter:'Enter' };
  if(m[code]) return m[code];
