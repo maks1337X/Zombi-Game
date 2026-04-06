@@ -53,6 +53,108 @@ const keys = {};
 let mDown = false;
 let floorCache = null;
 
+// ====================== WEBSOCKET МУЛЬТИПЛЕЕР (Render) ======================
+let ws = null;
+let roomId = null;
+let isHost = false;
+let myPlayerId = 1;
+let multiplayerMode = false;
+let lastWorldSync = 0;
+let lastInputSend = 0;
+let onlinePlayers = {};
+
+const SERVER_URL = "wss://zombi-game-3g9e.onrender.com";   // ← ТВОЯ ссылка
+
+function startOnlineLobby() {
+  document.getElementById('ui-menu').classList.add('hidden');
+  document.getElementById('ui-lobby').classList.remove('hidden');
+  document.getElementById('lobby-info').innerHTML = 'Готовы к бою?<br>Создайте комнату или введите ID от друга.';
+}
+
+function closeLobby() {
+  if (ws) ws.close();
+  ws = null;
+  roomId = null;
+  document.getElementById('ui-lobby').classList.add('hidden');
+  document.getElementById('ui-menu').classList.remove('hidden');
+}
+
+function createWebSocketGame() {
+  roomId = String(100000 + Math.floor(Math.random() * 900000));
+  isHost = true;
+  myPlayerId = 1;
+  document.getElementById('lobby-info').innerHTML = `
+    <b>Комната создана!</b><br>
+    ID: <span style="font-size:1.6rem;color:#ff0">${roomId}</span><br>
+    Отправьте этот ID другу.<br>
+    <span style="color:#88ff88">Ожидаем второго игрока...</span>
+  `;
+  connectWebSocket();
+}
+
+function joinWebSocketGame() {
+  const input = document.getElementById('room-id-input').value.trim();
+  if (!input || input.length !== 6) {
+    alert('Введите 6-значный ID комнаты!');
+    return;
+  }
+  roomId = input;
+  isHost = false;
+  myPlayerId = 2;
+  document.getElementById('lobby-info').innerHTML = `Присоединяемся к комнате <b>${roomId}</b>...`;
+  connectWebSocket();
+}
+
+function connectWebSocket() {
+  if (ws) ws.close();
+  
+  ws = new WebSocket(SERVER_URL);
+
+  ws.onopen = () => {
+    console.log(`✅ WebSocket подключён к серверу`);
+    ws.send(JSON.stringify({
+      type: 'join',
+      roomId: roomId,
+      id: myPlayerId,
+      name: pNames[myPlayerId-1] || ('Игрок ' + myPlayerId),
+      costume: pCostumes[myPlayerId-1] ? pCostumes[myPlayerId-1].id : 'soldier'
+    }));
+  };
+
+  ws.onmessage = (event) => {
+    try {
+      const data = JSON.parse(event.data);
+      handleWebSocketMessage(data);
+    } catch(e) { console.error(e); }
+  };
+
+  ws.onclose = () => {
+    console.warn('WebSocket соединение закрыто');
+    setTimeout(() => {
+      if (roomId) connectWebSocket();
+    }, 2000);
+  };
+
+  ws.onerror = (err) => console.error('WebSocket ошибка:', err);
+}
+
+function sendWebSocket(payload) {
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify(payload));
+  }
+}
+
+function handleWebSocketMessage(data) {
+  if (data.type === 'join') {
+    onlinePlayers[data.id] = data;
+    console.log(`Игрок ${data.id} присоединился`);
+
+    if (Object.keys(onlinePlayers).length >= 2 && gState !== 'PLAYING') {
+      console.log("✅ Два игрока. Запускаем игру...");
+      initGame(2, true);
+    }
+  }
+}
 const base = { x: 20.5*TILE, y: 20.5*TILE, size: 76, hp: 360, maxHp: 360, alive: true, radius: 42 };
 
 // ===== COSTUMES =====
